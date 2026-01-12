@@ -13,7 +13,7 @@ export const Hero = () => {
     established: getVal('hero_established', "Established 2015"),
     title: getVal('hero_title', "The Soul of Minimalism."),
     description: getVal('hero_description', "Architectural precision meets the poetry of light and shadow."),
-    hero_image: getVal('hero_image_url', "https://images.unsplash.com/photo-1564078516393-cf04bd966897"),
+    hero_image: getVal('hero_image_url', "https://res.cloudinary.com/risa-interior/image/upload/v1768235958/heroimage_mi1qzn.jpg"),
     accent_label: getVal('hero_accent_label', "Featured Concept"),
     accent_title: getVal('hero_accent_title', "Architectural Integrity")
   };
