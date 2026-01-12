@@ -6,7 +6,6 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// 🎯 SEO: Dynamic Metadata Generation
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
@@ -37,5 +36,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
+  // 🎯 Passing slug directly to the Client Component
   return <ServiceDetailClient slug={slug} />;
 }

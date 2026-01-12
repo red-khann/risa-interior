@@ -1,6 +1,6 @@
 'use client';
-import { useRouter, useParams } from 'next/navigation';
-import React, { useState, useEffect } from 'react'; // 🎯 Added React for React.use()
+import { useRouter } from 'next/navigation'; // removed useParams as we use props now
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { 
   ArrowLeft, ShieldCheck, Layers, Loader2, FileText, Globe, Tag, Layout, Target 
@@ -8,13 +8,13 @@ import {
 import { useContent } from '@/components/PreviewProvider'; 
 import Link from 'next/link';
 
-export default function ServiceDetailPage() {
+// 🎯 FIX: Define the props interface to receive 'slug' from the Server Page
+interface ServiceDetailClientProps {
+  slug: string;
+}
+
+export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) {
   const router = useRouter();
-  
-  // 🎯 FIX: Unwrap params using React.use() because params is now a Promise in Next.js 15
-  const params = useParams(); 
-  const slug = params?.slug as string;
-  
   const supabase = createClient();
   const liveContent = useContent();
   
@@ -39,17 +39,18 @@ export default function ServiceDetailPage() {
 
   useEffect(() => {
     async function fetchServiceData() {
-      // 🎯 Safety: Don't fetch until the slug is available
+      // 🎯 Safety: Ensure slug is present before fetching to avoid infinite loading
       if (!slug) return;
 
       setLoading(true);
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('services')
           .select('*')
           .eq('slug', slug)
           .single();
 
+        if (error) throw error;
         if (data) setService(data);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -58,7 +59,7 @@ export default function ServiceDetailPage() {
       }
     }
     fetchServiceData();
-  }, [slug, supabase]); // 🎯 Added slug as a dependency
+  }, [slug, supabase]);
 
   const renderedCtaDesc = service 
     ? ui.cta_description.replace('{service_name}', service.name.toLowerCase()) 
@@ -86,9 +87,7 @@ export default function ServiceDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#F7F5F2] pt-24 md:pt-32 pb-20 overflow-x-hidden selection:bg-[#B89B5E]/20">
-      {/* Article container with Schema.org tagging for SEO */}
       <article className="w-full max-w-7xl mx-auto px-6 md:px-12 lg:px-16" itemScope itemType="https://schema.org/Service">
-        
         <button 
           onClick={() => router.back()}
           className="group flex items-center gap-2 mb-12 md:mb-16 text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-400 hover:text-[#B89B5E] transition-all"
