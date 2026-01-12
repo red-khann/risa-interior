@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Exact Luxury Palette */
+    --bg-warm: #F7F5F2;
+    --surface: #FFFFFF;
+    --text-primary: #1C1C1C;
+    --text-secondary: #6B6B6B;
+    --accent-gold: #B89B5E;
+    --footer-bg: #121212;
+    
+    /* Spacing System */
+    --section-padding: 8rem;
+    --container-width: 1440px;
+  }
+
+  body {
+    @apply bg-[#F7F5F2] text-[#1C1C1C] antialiased;
+    font-feature-settings: "ss01", "cv01", "cv11";
+  }
+
+  h1, h2, h3 {
+    @apply font-bold tracking-tight uppercase;
+  }
+
+  p {
+    @apply text-[#6B6B6B] leading-relaxed font-light;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 py-[var(--section-padding)];
+  }
+
+  /* Luxury Button Style from Reference */
+  .btn-luxury {
+    @apply inline-block bg-[#1C1C1C] text-white px-10 py-4 text-[11px] uppercase tracking-[0.3em] font-bold
+           hover:bg-[#B89B5E] transition-all duration-300 ease-in-out;
+  }
+
+  /* Nav Link Indicator */
+  .nav-item {
+    @apply relative text-[11px] uppercase tracking-[0.25em] font-bold text-[#6B6B6B] hover:text-[#1C1C1C] transition-colors;
+  }
+
+  .nav-active {
+    @apply text-[#1C1C1C] after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-[2px] after:bg-[#B89B5E];
+  }
+}
