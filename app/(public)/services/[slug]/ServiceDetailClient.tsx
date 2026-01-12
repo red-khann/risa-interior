@@ -1,5 +1,6 @@
 'use client';
-import { useRouter } from 'next/navigation'; // removed useParams as we use props now
+
+import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { 
@@ -8,7 +9,7 @@ import {
 import { useContent } from '@/components/PreviewProvider'; 
 import Link from 'next/link';
 
-// 🎯 FIX: Define the props interface to receive 'slug' from the Server Page
+// 🎯 FIX: Explicitly define the Props interface for TypeScript to pass the build
 interface ServiceDetailClientProps {
   slug: string;
 }
@@ -21,6 +22,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🏛️ Composite Key Logic for CMS labels
   const getUI = (key: string, fallback: string) => {
     return liveContent[`service_detail_global:${key}`] || fallback;
   };
@@ -39,7 +41,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
 
   useEffect(() => {
     async function fetchServiceData() {
-      // 🎯 Safety: Ensure slug is present before fetching to avoid infinite loading
+      // 🎯 Safety: Ensure slug is present from the Server Page before fetching
       if (!slug) return;
 
       setLoading(true);
@@ -61,10 +63,12 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
     fetchServiceData();
   }, [slug, supabase]);
 
+  // Logic: Dynamic placeholder replacement for CTA narrative
   const renderedCtaDesc = service 
     ? ui.cta_description.replace('{service_name}', service.name.toLowerCase()) 
     : ui.cta_description;
 
+  // Loading State
   if (loading) return (
     <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
@@ -74,6 +78,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
     </div>
   );
   
+  // 404 State
   if (!service) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F5F2] px-6">
       <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-400 mb-8">Protocol Entry Not Found</p>
@@ -87,7 +92,9 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
 
   return (
     <main className="min-h-screen bg-[#F7F5F2] pt-24 md:pt-32 pb-20 overflow-x-hidden selection:bg-[#B89B5E]/20">
+      {/* Article container with Schema.org tagging for SEO */}
       <article className="w-full max-w-7xl mx-auto px-6 md:px-12 lg:px-16" itemScope itemType="https://schema.org/Service">
+        
         <button 
           onClick={() => router.back()}
           className="group flex items-center gap-2 mb-12 md:mb-16 text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-400 hover:text-[#B89B5E] transition-all"
@@ -97,6 +104,8 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
         </button>
 
         <div className="grid grid-cols-12 gap-y-16 lg:gap-24">
+          
+          {/* 🖋️ Left Column: Narrative Content */}
           <div className="col-span-12 lg:col-span-7 space-y-12 md:space-y-16">
             <header className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <span className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-bold block mb-4 md:mb-6 italic">
@@ -110,6 +119,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
               </p>
             </header>
 
+            {/* Hero Image */}
             <figure className="w-full aspect-video overflow-hidden bg-zinc-200 shadow-2xl border border-zinc-200">
               <img 
                 src={service.image_url} 
@@ -118,6 +128,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
               />
             </figure>
 
+            {/* Methodology Section */}
             <section className="space-y-8 md:space-y-10">
               <h2 className="text-[10px] uppercase tracking-[0.6em] font-bold text-zinc-900 flex items-center gap-3">
                 <FileText size={14} className="text-[#B89B5E]" aria-hidden="true" /> {ui.methodology_label}
@@ -127,6 +138,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
               </div>
             </section>
 
+            {/* Technical Pillars */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 md:gap-12 pt-12 border-t border-zinc-200">
               <div className="space-y-4">
                 <Layout className="text-[#B89B5E]" size={24} aria-hidden="true" />
@@ -141,10 +153,13 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
             </div>
           </div>
 
+          {/* 📬 Right Column: Sticky Specifications */}
           <aside className="col-span-12 lg:col-span-5">
             <div className="lg:sticky lg:top-40 space-y-10 md:space-y-12">
+              
               <section className="border-t border-zinc-200 pt-10">
                 <h3 className="text-[10px] uppercase tracking-[0.5em] font-bold text-zinc-900 mb-8 md:mb-10">{ui.specs_label}</h3>
+                
                 <dl className="space-y-4 md:space-y-6">
                   <div className="flex justify-between items-center py-4 border-b border-zinc-200/60">
                     <dt className="text-[9px] uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2">
@@ -152,18 +167,21 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
                     </dt>
                     <dd className="text-[10px] uppercase font-bold text-zinc-800">{service.service_type}</dd>
                   </div>
+                  
                   <div className="flex justify-between items-center py-4 border-b border-zinc-200/60">
                     <dt className="text-[9px] uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2">
                       <Tag size={14} /> Investment
                     </dt>
                     <dd className="text-[10px] uppercase font-bold text-[#B89B5E]">{service.starting_price}</dd>
                   </div>
+
                   <div className="flex justify-between items-center py-4 border-b border-zinc-200/60">
                     <dt className="text-[9px] uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2">
                       <Globe size={14} /> Consultation
                     </dt>
                     <dd className="text-[10px] uppercase font-bold text-zinc-800">{service.availability || 'Available Globally'}</dd>
                   </div>
+
                   {service.focus_keyword && (
                     <div className="flex justify-between items-center py-4 border-b border-zinc-200/60">
                       <dt className="text-[9px] uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2">
@@ -175,15 +193,19 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
                 </dl>
               </section>
 
+              {/* Consultation Box */}
               <div className="space-y-6 bg-white p-8 md:p-10 border border-zinc-100 shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#B89B5E]">{ui.next_steps}</p>
-                <p className="text-sm text-zinc-600 font-light leading-relaxed italic">{renderedCtaDesc}</p>
+                <p className="text-sm text-zinc-600 font-light leading-relaxed italic">
+                  {renderedCtaDesc}
+                </p>
                 <Link href="/contact" className="block">
                   <button className="group w-full bg-[#1C1C1C] text-white py-5 md:py-6 text-[10px] uppercase tracking-[0.5em] font-bold hover:bg-[#B89B5E] transition-all flex items-center justify-center gap-4 shadow-xl">
                     {ui.cta_button} <ArrowLeft size={14} className="rotate-180 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
               </div>
+
             </div>
           </aside>
         </div>
