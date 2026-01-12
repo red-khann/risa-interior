@@ -86,7 +86,7 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
         excerpt: formData.excerpt || formData.content.slice(0, 150) + '...',
         date: initialData?.date || new Date().toISOString().split('T')[0],
         category: formData.category,
-        status: targetStatus,
+        status: targetStatus.charAt(0).toUpperCase() + targetStatus.slice(1).toLowerCase(),
         image_url: finalImageUrl,
         hero_alt_text: formData.heroAltText,
         meta_description: formData.metaDescription,
@@ -129,10 +129,10 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
             </div>
           </div>
           <div className="flex items-center gap-4">
-             <button onClick={() => handleSubmit('draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
+             <button onClick={() => handleSubmit('Draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} {isEdit ? 'Sync Draft' : 'Save Draft'}
              </button>
-             <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+             <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('Active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
                 <Send size={14} /> {isEdit ? 'Sync Live' : 'Publish Post'}
              </button>
           </div>
