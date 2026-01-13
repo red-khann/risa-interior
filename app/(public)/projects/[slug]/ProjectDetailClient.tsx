@@ -73,7 +73,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
             <span className="w-1 h-1 rounded-full bg-zinc-300" aria-hidden="true"></span>
             <span>{project.phase}</span>
           </div>
-          <h1 className="text-6xl md:text-9xl font-bold tracking-tighter text-[#1C1C1C] uppercase mb-10 leading-[0.85]" itemProp="name">
+          <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
             {project.title}
           </h1>
           <div className="flex flex-wrap items-center gap-10">

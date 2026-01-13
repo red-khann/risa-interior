@@ -111,7 +111,7 @@ export default function ServiceDetailClient({ slug }: ServiceDetailClientProps) 
               <span className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-bold block mb-4 md:mb-6 italic">
                 Protocol — <span itemProp="serviceType">{service.service_type}</span>
               </span>
-              <h1 className="text-4xl md:text-8xl font-light tracking-tighter text-[#1C1C1C] leading-[1.1] md:leading-[0.9] mb-8 md:mb-10 uppercase break-words font-serif italic" itemProp="name">
+              <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
                 {service.name}
               </h1>
               <p className="text-lg md:text-2xl text-zinc-500 font-light leading-relaxed italic font-serif border-l-2 border-[#B89B5E]/30 pl-6 md:pl-8">

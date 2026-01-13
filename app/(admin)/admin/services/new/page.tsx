@@ -7,7 +7,7 @@ import {
   Camera, Save, Send, Layers, Target, ArrowLeft, Loader2, X, ChevronDown, MapPin
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { logActivity } from '@/utils/supabase/logger'; // ✅ Integrated Logger
+import { logActivity } from '@/utils/supabase/logger';
 
 const PRESET_TYPES = ["Residential Architecture", "Commercial Design", "Spatial Consulting", "Turnkey Interior Solutions"];
 const GEO_REACH_OPTIONS = ["Bareilly", "Uttar Pradesh (UP)", "All Over India", "Globally"];
@@ -31,6 +31,20 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
   const [imageAsset, setImageAsset] = useState<{file?: File, preview: string} | null>(
     initialData?.image_url ? { preview: initialData.image_url } : null
   );
+
+  // 🔄 UPDATED: Helper to call our Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    if (!url || !url.includes('cloudinary')) return;
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cloudinary cleanup failed:", err);
+    }
+  };
 
   const seoAudit = useMemo(() => {
     const wordCount = formData.description.split(/\s+/).filter(Boolean).length;
@@ -61,7 +75,20 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
     setLoading(true);
     try {
       let finalImageUrl = imageAsset?.preview || '';
-      if (imageAsset?.file) finalImageUrl = await uploadFile(imageAsset.file);
+
+      // 🔄 UPDATED: Image Replacement / Cleanup Logic
+      if (imageAsset?.file) {
+        // If editing and a new file is provided, delete the old one first
+        if (isEdit && initialData?.image_url) {
+          await deleteFromCloudinary(initialData.image_url);
+        }
+        finalImageUrl = await uploadFile(imageAsset.file);
+      } 
+      // If the user removed the image completely during an edit
+      else if (isEdit && !imageAsset && initialData?.image_url) {
+        await deleteFromCloudinary(initialData.image_url);
+        finalImageUrl = '';
+      }
 
       const payload = {
         name: formData.name,
@@ -74,7 +101,8 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
         hero_alt_text: formData.heroAltText,
         image_url: finalImageUrl,
         availability: formData.availability,
-        status: targetStatus
+        // 🔄 UPDATED: Ensure exact casing "Active" or "Draft"
+        status: targetStatus === 'Active' ? 'Active' : 'Draft'
       };
 
       const { error } = isEdit 
@@ -83,7 +111,6 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
 
       if (error) throw error;
 
-      // 🛡️ UNIVERSAL LOGGING: Records Service creation/update for the Dashboard feed
       await logActivity(isEdit ? 'UPDATE' : 'CREATE', formData.name, 'SERVICE');
 
       router.push('/admin/services');
@@ -116,18 +143,18 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
           </div>
 
           <div className="flex items-center gap-4">
-             <button onClick={() => handleSubmit('Draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
+              <button onClick={() => handleSubmit('Draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} 
                 {isEdit ? 'Sync Draft' : 'Save Draft'}
-             </button>
-             <button 
-               onClick={() => handleSubmit('Active')} 
-               disabled={!seoAudit.isReady || loading} 
-               className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}
-             >
+              </button>
+              <button 
+                onClick={() => handleSubmit('Active')} 
+                disabled={!seoAudit.isReady || loading} 
+                className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}
+              >
                 <Send size={14} /> 
                 {isEdit ? 'Sync Live' : 'Publish Service'}
-             </button>
+              </button>
           </div>
         </div>
       </header>
@@ -150,14 +177,15 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
           </section>
 
           {/* Media Module */}
-          <section className="bg-white p-8 border border-zinc-100 space-y-8 shadow-sm">
+          <section className="bg-white p-8 border border-zinc-100 shadow-sm space-y-8">
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-900">Hero Representation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div className="relative aspect-video bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-4 hover:border-[#B89B5E] transition-all cursor-pointer group overflow-hidden">
                 {imageAsset ? (
                   <>
-                    <img src={imageAsset.preview} className="absolute inset-0 w-full h-full object-cover" />
-                    <button onClick={() => setImageAsset(null)} className="absolute top-2 right-2 bg-black text-white p-1 rounded-full"><X size={12}/></button>
+                    <img src={imageAsset.preview} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
+                    {/* 🔄 UPDATED: type="button" to prevent submit */}
+                    <button type="button" onClick={() => setImageAsset(null)} className="absolute top-2 right-2 bg-black text-white p-1 rounded-full z-10"><X size={12}/></button>
                   </>
                 ) : (
                   <>
@@ -211,8 +239,8 @@ export default function NewServiceForm({ initialData, isEdit }: { initialData?: 
             </div>
 
             <div className="space-y-4 pt-6 border-t border-zinc-50">
-               <label className="text-[9px] uppercase font-bold text-zinc-400">Starting Price</label>
-               <input value={formData.startingPrice} onChange={(e) => setFormData({...formData, startingPrice: e.target.value})} placeholder="₹ / $" className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold outline-none" />
+                <label className="text-[9px] uppercase font-bold text-zinc-400">Starting Price</label>
+                <input value={formData.startingPrice} onChange={(e) => setFormData({...formData, startingPrice: e.target.value})} placeholder="₹ / $" className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold outline-none" />
             </div>
           </div>
 

@@ -84,8 +84,9 @@ export default function AboutPage() {
               <p className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-black mb-8 italic">
                 {content.subtitle}
               </p>
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-[0.9] mb-12 whitespace-pre-line text-zinc-900 uppercase">
-                {renderStylishTitle(content.title)}
+              
+              <h1 className="text-[10vw] lg:text-[6vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
+               {renderStylishTitle(content.title)}
               </h1>
               <p className="text-xl text-zinc-600 leading-relaxed font-light font-sans max-w-xl">
                 {content.description}

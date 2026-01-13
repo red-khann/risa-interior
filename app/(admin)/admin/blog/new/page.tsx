@@ -7,7 +7,7 @@ import {
   Send, Save, Camera, Link as LinkIcon, Sparkles, X, Loader2, ChevronDown 
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { logActivity } from '@/utils/supabase/logger'; // ✅ Integrated Logger
+import { logActivity } from '@/utils/supabase/logger';
 
 const PRESET_BLOG_CATEGORIES = ["Studio News", "Design Philosophy", "Material Spotlight", "Exhibition"];
 
@@ -34,7 +34,19 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
     initialData?.image_url ? { preview: initialData.image_url } : null
   );
 
-  // 🔄 Fetch Services for Linking
+  // 🔄 UPDATED: Helper to call our Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cleanup failed:", err);
+    }
+  };
+
   useEffect(() => {
     async function getServices() {
       const { data } = await supabase.from('services').select('name').order('name', { ascending: true });
@@ -43,7 +55,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
     getServices();
   }, []);
 
-  // 📊 Live Stats Calculation
   const stats = useMemo(() => {
     const words = formData.content.trim() ? formData.content.trim().split(/\s+/).length : 0;
     const characters = formData.content.length;
@@ -51,7 +62,7 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
   }, [formData.content]);
   
   const seoAudit = useMemo(() => {
-    const slug = formData.title.toLowerCase().replaceAll(' ', '-').replace(/[^\w-]+/g, '');
+    const slug = formData.title.toLowerCase().replaceAll(' ', '-').replace(/[^\-]+/g, '');
     const keywordInTitle = formData.focusKeyword.length > 2 && 
       formData.title.toLowerCase().includes(formData.focusKeyword.toLowerCase());
     
@@ -78,7 +89,20 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
     setLoading(true);
     try {
       let finalImageUrl = imageAsset?.preview || '';
-      if (imageAsset?.file) finalImageUrl = await uploadFile(imageAsset.file);
+      
+      // 🔄 UPDATED: Handle Image Replacement Logic
+      if (imageAsset?.file) {
+        // If we are editing and a new file is uploaded, delete the old one from Cloudinary
+        if (isEdit && initialData?.image_url) {
+          await deleteFromCloudinary(initialData.image_url);
+        }
+        finalImageUrl = await uploadFile(imageAsset.file);
+      } 
+      // If the user removed the image (imageAsset is null) during an edit
+      else if (isEdit && !imageAsset && initialData?.image_url) {
+        await deleteFromCloudinary(initialData.image_url);
+        finalImageUrl = '';
+      }
 
       const payload = {
         title: formData.title,
@@ -86,7 +110,8 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
         excerpt: formData.excerpt || formData.content.slice(0, 150) + '...',
         date: initialData?.date || new Date().toISOString().split('T')[0],
         category: formData.category,
-        status: targetStatus,
+        // 🔄 UPDATED: Enforcing "Active" and "Draft" casing
+        status: targetStatus === 'Active' ? 'Active' : 'Draft',
         image_url: finalImageUrl,
         hero_alt_text: formData.heroAltText,
         meta_description: formData.metaDescription,
@@ -101,7 +126,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
 
       if (error) throw error;
 
-      // 🛡️ UNIVERSAL LOGGING: Records Narrative publication or update for the Dashboard feed
       await logActivity(isEdit ? 'UPDATE' : 'CREATE', formData.title, 'JOURNAL');
 
       router.push('/admin/blog');
@@ -129,12 +153,14 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
             </div>
           </div>
           <div className="flex items-center gap-4">
-             <button onClick={() => handleSubmit('draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
+              {/* 🔄 UPDATED: Passing "Draft" exactly */}
+              <button onClick={() => handleSubmit('Draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} {isEdit ? 'Sync Draft' : 'Save Draft'}
-             </button>
-             <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+              </button>
+              {/* 🔄 UPDATED: Passing "Active" exactly */}
+              <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('Active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
                 <Send size={14} /> {isEdit ? 'Sync Live' : 'Publish Post'}
-             </button>
+              </button>
           </div>
         </div>
       </header>
@@ -177,8 +203,14 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
               <div className="relative aspect-[16/9] bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-4 hover:border-[#B89B5E] transition-all cursor-pointer group overflow-hidden">
                 {imageAsset ? (
                   <>
-                    <img src={imageAsset.preview} className="absolute inset-0 w-full h-full object-cover" />
-                    <button onClick={() => setImageAsset(null)} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={14}/></button>
+                    <img src={imageAsset.preview} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
+                    <button 
+                      type="button"
+                      onClick={() => setImageAsset(null)} 
+                      className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <X size={14}/>
+                    </button>
                   </>
                 ) : (
                   <>
@@ -211,7 +243,7 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none" size={14} />
               </div>
               {(!PRESET_BLOG_CATEGORIES.includes(formData.category) || formData.category === "") && (
-                <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="NEW TAXONOMY..." className="w-full p-4 bg-zinc-50 border border-zinc-100 text-[10px] font-bold uppercase tracking-widest outline-none text-[#B89B5E] outline-none animate-in slide-in-from-top-2" />
+                <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="NEW TAXONOMY..." className="w-full p-4 bg-zinc-50 border border-zinc-100 text-[10px] font-bold uppercase tracking-widest outline-none text-[#B89B5E] animate-in slide-in-from-top-2" />
               )}
             </div>
 

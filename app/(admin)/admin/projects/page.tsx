@@ -24,7 +24,8 @@ export default function AdminProjectsPage() {
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [projects, setProjects] = useState<any[]>([]);
 
-  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '' });
+  // 🗑️ 🔄 UPDATED: Added imageUrl to modal state to handle Cloudinary cleanup
+  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
 
   async function fetchProjects() {
     setLoading(true);
@@ -39,7 +40,19 @@ export default function AdminProjectsPage() {
 
   useEffect(() => { fetchProjects(); }, []);
 
-  // ⚡ FEATURE: Toggle Home Page Visibility
+  // 🔄 UPDATED: Helper to call your Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cloudinary Cleanup Error:", err);
+    }
+  };
+
   const handleFeatureToggle = async (id: string, currentVal: boolean, title: string) => {
     const newVal = !currentVal;
     const { error } = await supabase.from('projects').update({ is_featured: newVal }).eq('id', id);
@@ -49,7 +62,6 @@ export default function AdminProjectsPage() {
     }
   };
 
-  // ⚡ FEATURE: Update Priority Order
   const handleOrderUpdate = async (id: string, newOrder: number) => {
     const { error } = await supabase.from('projects').update({ featured_order: newOrder }).eq('id', id);
     if (!error) {
@@ -58,6 +70,7 @@ export default function AdminProjectsPage() {
   };
 
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
+    // 🔄 UPDATED: Strictly enforcing case-sensitive 'Active' and 'Draft'
     const newStatus = currentStatus === 'Draft' ? 'Active' : 'Draft';
     const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', id);
     if (!error) {
@@ -68,11 +81,18 @@ export default function AdminProjectsPage() {
 
   const confirmDelete = async () => {
     if (!deleteModal.id) return;
+
+    // 🔄 UPDATED: Delete the image from Cloudinary first
+    if (deleteModal.imageUrl) {
+      await deleteFromCloudinary(deleteModal.imageUrl);
+    }
+    
     const { error } = await supabase.from('projects').delete().eq('id', deleteModal.id);
     if (!error) {
       await logActivity('DELETE', deleteModal.title, 'PROJECT');
       setProjects(prev => prev.filter(p => p.id !== deleteModal.id));
-      setDeleteModal({ show: false, id: '', title: '' });
+      // 🔄 UPDATED: Clean reset of modal state
+      setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
     }
   };
 
@@ -90,17 +110,15 @@ export default function AdminProjectsPage() {
         const matchesCategory = activeCategory === "All" || project.category === activeCategory;
         const matchesStatus = activeStatus === "All Status" || project.phase === activeStatus;
         
-        // RESTORED: Case-insensitive status matching logic from old code
         const matchesVisibility = activeVisibility === "All Visibility" || 
-                                   (activeVisibility === "Active (Live)" && project.status?.toLowerCase() === "active") ||
-                                   (activeVisibility === "Draft (Internal)" && project.status?.toLowerCase() === "draft") ||
+                                   (activeVisibility === "Active (Live)" && project.status === "Active") ||
+                                   (activeVisibility === "Draft (Internal)" && project.status === "Draft") ||
                                    (activeVisibility === "Featured on Home" && project.is_featured);
         
         return matchesSearch && matchesCategory && matchesStatus && matchesVisibility;
       })
       .sort((a, b) => {
         const factor = sortConfig.direction === 'desc' ? -1 : 1;
-        // RESTORED: All sorting keys including visibility and identity
         if (sortConfig.key === 'order') return (a.featured_order - b.featured_order) * factor;
         if (sortConfig.key === 'date') return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * factor;
         if (sortConfig.key === 'identity') return (a.title || "").localeCompare(b.title || "") * factor;
@@ -119,7 +137,7 @@ export default function AdminProjectsPage() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500 relative">
       
-      {/* 🏛️ RESTORED: THEMED CUSTOM DELETE MODAL */}
+      {/* 🏛️ THEMED CUSTOM DELETE MODAL */}
       {deleteModal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4">
           <div className="bg-white border border-zinc-200 p-12 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
@@ -131,7 +149,8 @@ export default function AdminProjectsPage() {
               Are you certain you wish to delete <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>? This action is permanent.
             </p>
             <div className="flex gap-4">
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
+              {/* 🔄 UPDATED: Clean reset on cancel */}
+              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
               <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Confirm Delete</button>
             </div>
           </div>
@@ -150,7 +169,6 @@ export default function AdminProjectsPage() {
         </Link>
       </div>
 
-      {/* Filters Bar */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm">
         <div className="relative w-full md:w-64">
            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
@@ -194,7 +212,8 @@ export default function AdminProjectsPage() {
           </thead>
           <tbody className="divide-y divide-zinc-50">
             {filteredProjects.map((project) => {
-               const isDraft = project.status?.toLowerCase() === "draft";
+               // 🔄 UPDATED: Use Case-Sensitive check
+               const isDraft = project.status === "Draft";
                return (
                 <tr key={project.id} className={`hover:bg-zinc-50/50 group transition-colors ${project.is_featured ? 'bg-zinc-50/30' : ''}`}>
                   <td className="p-6 text-center">
@@ -238,7 +257,8 @@ export default function AdminProjectsPage() {
                         {isDraft ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                       <Link href={`/admin/projects/edit/${project.id}`} className="text-zinc-400 hover:text-black"><Edit3 size={14} /></Link>
-                      <button onClick={() => setDeleteModal({ show: true, id: project.id, title: project.title })} className="text-zinc-300 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                      {/* 🔄 UPDATED: Passing project data and image_url to modal */}
+                      <button onClick={() => setDeleteModal({ show: true, id: project.id, title: project.title, imageUrl: project.image_url })} className="text-zinc-300 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

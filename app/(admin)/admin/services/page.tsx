@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Link from "next/link";
 import { createClient } from '@/utils/supabase/client';
-import { logActivity } from '@/utils/supabase/logger'; // ✅ Integrated Logger
+import { logActivity } from '@/utils/supabase/logger';
 
 // 🛠️ Updated Categories to match your DB service_type presets
 const CATEGORIES = ["All", "Residential Architecture", "Commercial Design", "Spatial Consulting", "Turnkey Interior Solutions"];
@@ -21,8 +21,8 @@ export default function AdminServicesPage() {
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<any[]>([]);
 
-  // 🗑️ Themed Delete Modal State - Added 'title' to track for logging
-  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '' });
+  // 🗑️ 🔄 UPDATED: Added imageUrl to state to handle potential Cloudinary cleanup
+  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
 
   async function fetchServices() {
     setLoading(true);
@@ -37,13 +37,25 @@ export default function AdminServicesPage() {
 
   useEffect(() => { fetchServices(); }, []);
 
-  // 🧪 Logic: Toggle status in Database
+  // 🔄 UPDATED: Helper to call your Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cloudinary Cleanup Error:", err);
+    }
+  };
+
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
+    // 🔄 UPDATED: Strictly enforcing case-sensitive 'Active' and 'Draft'
     const newStatus = currentStatus === 'Active' ? 'Draft' : 'Active';
     const { error } = await supabase.from('services').update({ status: newStatus }).eq('id', id);
     
     if (!error) {
-      // 🛡️ SYNC TO DASHBOARD: Records the visibility change
       await logActivity('TOGGLE', `${title} to ${newStatus}`, 'SERVICE');
       setServices(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s));
     }
@@ -52,14 +64,19 @@ export default function AdminServicesPage() {
   // 🗑️ Logic: Themed Delete
   const confirmDelete = async () => {
     if (!deleteModal.id) return;
+
+    // 🔄 UPDATED: Delete from Cloudinary first if an image exists for this service
+    if (deleteModal.imageUrl) {
+      await deleteFromCloudinary(deleteModal.imageUrl);
+    }
     
     const { error } = await supabase.from('services').delete().eq('id', deleteModal.id);
     
     if (!error) {
-      // 🛡️ SYNC TO DASHBOARD: Records the service removal permanently
       await logActivity('DELETE', deleteModal.title, 'SERVICE');
       setServices(prev => prev.filter(s => s.id !== deleteModal.id));
-      setDeleteModal({ show: false, id: '', title: '' });
+      // 🔄 UPDATED: Clean reset of state
+      setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
     }
   };
 
@@ -107,7 +124,8 @@ export default function AdminServicesPage() {
                Are you certain you wish to delete <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>? This action is permanent.
             </p>
             <div className="flex gap-4">
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
+              {/* 🔄 UPDATED: Reset state on cancel */}
+              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
               <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Delete</button>
             </div>
           </div>
@@ -201,7 +219,8 @@ export default function AdminServicesPage() {
                       <Link href={`/admin/services/edit/${service.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">
                         <Edit3 size={14} /> Edit
                       </Link>
-                      <button onClick={() => setDeleteModal({ show: true, id: service.id, title: service.name })} className="text-zinc-200 hover:text-red-600 transition-colors">
+                      {/* 🔄 UPDATED: Passing service id, title, and image_url to modal */}
+                      <button onClick={() => setDeleteModal({ show: true, id: service.id, title: service.name, imageUrl: service.image_url })} className="text-zinc-200 hover:text-red-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                     </div>

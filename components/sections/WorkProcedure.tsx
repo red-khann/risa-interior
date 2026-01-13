@@ -35,7 +35,8 @@ export const WorkProcedure = () => {
           {getVal('proc_subtitle', "Our Methodology")}
         </p>
         {/* 🎯 H2: Represents the second level of importance on the page */}
-        <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-[#1C1C1C]">
+        <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter text-[#1C1C1C] animate-in fade-in slide-in-from-bottom-8 duration-1000 ">
+        
           {getVal('proc_title', "Work Procedure")}
         </h2>
       </header>

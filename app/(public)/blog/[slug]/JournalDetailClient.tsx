@@ -114,7 +114,7 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
             </div>
           </div>
           
-          <h1 className="text-5xl md:text-8xl font-bold tracking-tighter leading-[0.9] text-zinc-900 uppercase mb-10" itemProp="headline">
+         <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
             {post.title}
           </h1>
           

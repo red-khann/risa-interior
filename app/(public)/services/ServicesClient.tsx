@@ -91,7 +91,7 @@ export default function ServicesClient() {
           <p className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-bold mb-6 italic">
             {pageSubtitle}
           </p>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-none text-[#1C1C1C] uppercase mb-8">
+          <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
             {renderStylishTitle(pageTitle)}
           </h1>
         </header>

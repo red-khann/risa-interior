@@ -25,7 +25,7 @@ export const ProjectCard = ({ project }: { project: any }) => {
         <div className="absolute inset-0 bg-[#1C1C1C]/40 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center backdrop-blur-[2px]">
           <div className="overflow-hidden">
             <p className="text-white text-[10px] uppercase tracking-[0.8em] font-black transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-              Examine Protocol
+              View Project
             </p>
           </div>
         </div>

@@ -68,9 +68,9 @@ export default function ProjectsClient() {
         <p className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-black mb-4 italic">
           {pageSubtitle}
         </p>
-        <h1 className="text-5xl md:text-9xl font-bold tracking-tighter text-zinc-900 uppercase leading-[0.9]">
-          {pageTitle}
-        </h1>
+        <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            {pageTitle}
+          </h1>
       </header>
 
       {/* Filter Bar */}

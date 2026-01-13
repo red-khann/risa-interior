@@ -80,7 +80,7 @@ export default function ContactPage() {
               <h2 id="contact-heading" className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-6 italic">
                 {content.subtitle}
               </h2>
-              <h1 className="text-5xl md:text-6xl font-light tracking-tighter leading-tight whitespace-pre-line text-zinc-900 uppercase">
+              <h1 className="text-5xl md:text-6xl font-bold tracking-tighter leading-[0.85] mb-12 text-zinc-900 uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
                 {content.title.split(/(\[.*?\])/g).map((part, i) => part.startsWith('[') ? 
                   <span key={i} className="font-serif italic text-zinc-300">{part.slice(1, -1)}</span> : part
                 )}

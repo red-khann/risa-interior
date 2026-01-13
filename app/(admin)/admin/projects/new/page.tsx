@@ -8,7 +8,7 @@ import {
   ChevronDown, Trash2, Loader2, X, Hammer
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { logActivity } from '@/utils/supabase/logger'; // ✅ Integrated Logger
+import { logActivity } from '@/utils/supabase/logger';
 
 const PRESET_CATEGORIES = ["Residential", "Commercial", "Hospitality", "Interior", "Restoration"];
 
@@ -52,6 +52,20 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
     initialData?.transformation_after ? { preview: initialData.transformation_after, alt: initialData.after_alt || '' } : null
   );
 
+  // 🔄 UPDATED: Helper to call our Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    if (!url || !url.includes('cloudinary')) return;
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cloudinary cleanup failed:", err);
+    }
+  };
+
   const seoAudit = useMemo(() => {
     const slug = formData.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     return {
@@ -71,21 +85,41 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
 
   const handleDelete = async () => {
     setLoading(true);
-    const itemName = initialData?.title;
-    const { error } = await supabase.from('projects').delete().eq('id', initialData.id);
-    
-    if (!error) {
-      // 🛡️ UNIVERSAL LOGGING: Records project deletion
-      await logActivity('DELETE', itemName, 'PROJECT');
-      router.push('/admin/projects');
+    try {
+      // 🔄 UPDATED: Wipe all associated media from Cloudinary on delete
+      const allMedia = [
+        ...(initialData?.gallery || []),
+        initialData?.transformation_before,
+        initialData?.transformation_after
+      ].filter(Boolean);
+
+      await Promise.all(allMedia.map(url => deleteFromCloudinary(url)));
+
+      const itemName = initialData?.title;
+      const { error } = await supabase.from('projects').delete().eq('id', initialData.id);
+      
+      if (!error) {
+        await logActivity('DELETE', itemName, 'PROJECT');
+        router.push('/admin/projects');
+      }
+    } catch (err) {
+      console.error("Full delete failed", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (statusArg: string) => {
     if (!seoAudit.isReady) return alert("Required: Title, City, and Gallery Image.");
     setLoading(true);
     try {
+      // 🔄 UPDATED: Cleanup removed gallery images during Edit
+      if (isEdit && initialData?.gallery) {
+        const currentUrls = galleryItems.map(item => item.preview);
+        const removedUrls = initialData.gallery.filter((url: string) => !currentUrls.includes(url));
+        await Promise.all(removedUrls.map((url: string) => deleteFromCloudinary(url)));
+      }
+
       const gUrls = await Promise.all(galleryItems.map(async item => {
         if (item.file) return await uploadFile(item.file);
         return item.preview;
@@ -93,9 +127,17 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
       const gAlts = galleryItems.map(item => item.alt || formData.title);
 
       let bUrl = beforeAsset?.preview || '', aUrl = afterAsset?.preview || '';
+      
+      // 🔄 UPDATED: Transformation Image Replacement Logic
       if (showTransformation) {
-        if (beforeAsset?.file) bUrl = await uploadFile(beforeAsset.file);
-        if (afterAsset?.file) aUrl = await uploadFile(afterAsset.file);
+        if (beforeAsset?.file) {
+          if (isEdit && initialData?.transformation_before) await deleteFromCloudinary(initialData.transformation_before);
+          bUrl = await uploadFile(beforeAsset.file);
+        }
+        if (afterAsset?.file) {
+          if (isEdit && initialData?.transformation_after) await deleteFromCloudinary(initialData.transformation_after);
+          aUrl = await uploadFile(afterAsset.file);
+        }
       }
 
       const payload = {
@@ -113,7 +155,8 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
         materials: formData.materials,
         date: formData.date,
         phase: phase,
-        status: statusArg,
+        // 🔄 UPDATED: Ensuring "Active" / "Draft" casing
+        status: statusArg === 'Active' ? 'Active' : 'Draft',
         image_url: gUrls[coverIndex] || gUrls[0],
         gallery: gUrls,
         gallery_alts: gAlts,
@@ -131,9 +174,7 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
 
       if (error) throw error;
 
-      // 🛡️ UNIVERSAL LOGGING: Syncs Narrative creation/update to the Dashboard
       await logActivity(isEdit ? 'UPDATE' : 'CREATE', formData.title, 'PROJECT');
-
       setShowSuccessModal(true);
     } catch (err: any) {
       alert(err.message);
@@ -244,7 +285,12 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
                           setGalleryItems(newItems);
                       }} />
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); setGalleryItems(galleryItems.filter((_, idx) => idx !== i)); }} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 z-30"><X size={10} /></button>
+                    {/* 🔄 UPDATED: Gallery items now trigger cloud delete on removal if they are already stored URLs */}
+                    <button onClick={async (e) => { 
+                      e.stopPropagation(); 
+                      if (!item.file) await deleteFromCloudinary(item.preview);
+                      setGalleryItems(galleryItems.filter((_, idx) => idx !== i)); 
+                    }} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 z-30"><X size={10} /></button>
                 </div>
               ))}
               <label className="aspect-[4/5] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-2 group hover:bg-white cursor-pointer transition-all">
@@ -272,6 +318,9 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
                    <div className="relative aspect-video bg-zinc-50 border-2 border-dashed border-zinc-200 flex items-center justify-center group cursor-pointer">
                       {beforeAsset ? <img src={beforeAsset.preview} className="absolute inset-0 w-full h-full object-cover" /> : <Plus size={20} className="text-zinc-200" />}
                       <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && setBeforeAsset({file: e.target.files[0], preview: URL.createObjectURL(e.target.files[0]), alt: ''})} />
+                      {beforeAsset && (
+                        <button onClick={(e) => { e.stopPropagation(); setBeforeAsset(null); }} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full z-10 opacity-0 group-hover:opacity-100"><X size={10} /></button>
+                      )}
                    </div>
                    <input value={beforeAsset?.alt || ''} type="text" placeholder="BEFORE ALT TEXT..." className="w-full bg-transparent border-b border-zinc-100 py-2 text-[9px] uppercase outline-none focus:border-[#B89B5E]" onChange={(e) => setBeforeAsset(prev => prev ? {...prev, alt: e.target.value} : { preview: '', alt: e.target.value })} />
                 </div>
@@ -279,6 +328,9 @@ export default function CompleteSEOProjectForm({ initialData, isEdit }: { initia
                    <div className="relative aspect-video bg-zinc-50 border-2 border-dashed border-zinc-200 flex items-center justify-center group cursor-pointer">
                       {afterAsset ? <img src={afterAsset.preview} className="absolute inset-0 w-full h-full object-cover" /> : <Plus size={20} className="text-zinc-200" />}
                       <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && setAfterAsset({file: e.target.files[0], preview: URL.createObjectURL(e.target.files[0]), alt: ''})} />
+                      {afterAsset && (
+                        <button onClick={(e) => { e.stopPropagation(); setAfterAsset(null); }} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full z-10 opacity-0 group-hover:opacity-100"><X size={10} /></button>
+                      )}
                    </div>
                    <input value={afterAsset?.alt || ''} type="text" placeholder="AFTER ALT TEXT..." className="w-full bg-transparent border-b border-zinc-100 py-2 text-[9px] uppercase outline-none focus:border-[#B89B5E]" onChange={(e) => setAfterAsset(prev => prev ? {...prev, alt: e.target.value} : { preview: '', alt: e.target.value })} />
                 </div>

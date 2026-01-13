@@ -6,10 +6,10 @@ import {
   Eye, EyeOff, ArrowUpDown, Loader2, AlertTriangle 
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { logActivity } from '@/utils/supabase/logger'; // ✅ Integrated Logger
+import { logActivity } from '@/utils/supabase/logger';
 
 const BLOG_CATEGORIES = ["All", "Design Trends", "Studio News", "Exhibition", "Design Philosophy", "Material Spotlight"];
-const STATUS_FILTERS = ["All Status", "active", "draft"];
+const STATUS_FILTERS = ["All Status", "Active", "Draft"];
 
 export default function AdminBlogPage() {
   const supabase = createClient();
@@ -21,7 +21,8 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true);
 
   // 🗑️ Themed Delete Modal State
-  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '' });
+  // 🔄 UPDATED: Added imageUrl to state to track what needs deletion in Cloudinary
+  const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
 
   async function fetchPosts() {
     setLoading(true);
@@ -36,13 +37,24 @@ export default function AdminBlogPage() {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  // 🧪 Logic: Toggle status in Database
+  // 🔄 UPDATED: Helper to call your Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cloudinary Cleanup Error:", err);
+    }
+  };
+
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
-    const newStatus = currentStatus === 'active' ? 'draft' : 'active';
+    const newStatus = currentStatus === 'Active' ? 'Draft' : 'Active';
     const { error } = await supabase.from('blog').update({ status: newStatus }).eq('id', id);
     
     if (!error) {
-      // 🛡️ SYNC TO DASHBOARD: Records the visibility change in the journal
       await logActivity('TOGGLE', `${title} to ${newStatus}`, 'JOURNAL');
       setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
     }
@@ -51,14 +63,19 @@ export default function AdminBlogPage() {
   // 🗑️ Logic: Themed Delete
   const confirmDelete = async () => {
     if (!deleteModal.id) return;
+
+    // 🔄 UPDATED: Delete from Cloudinary first if an image URL exists
+    if (deleteModal.imageUrl) {
+      await deleteFromCloudinary(deleteModal.imageUrl);
+    }
     
     const { error } = await supabase.from('blog').delete().eq('id', deleteModal.id);
     
     if (!error) {
-      // 🛡️ SYNC TO DASHBOARD: Records the narrative removal
       await logActivity('DELETE', deleteModal.title, 'JOURNAL');
       setPosts(prev => prev.filter(p => p.id !== deleteModal.id));
-      setDeleteModal({ show: false, id: '', title: '' });
+      // 🔄 UPDATED: Reset all modal fields
+      setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
     }
   };
 
@@ -109,14 +126,14 @@ export default function AdminBlogPage() {
               Are you certain you wish to remove <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>? This action is permanent.
             </p>
             <div className="flex gap-4">
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
+              {/* 🔄 UPDATED: Clear state on cancel */}
+              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
               <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Confirm Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🧭 Header */}
       <div className="flex justify-between items-end">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Journal</span>
@@ -129,7 +146,6 @@ export default function AdminBlogPage() {
         </Link>
       </div>
 
-      {/* 🔍 Search & Filters */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm">
         <div className="relative w-full md:w-64">
            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
@@ -142,6 +158,7 @@ export default function AdminBlogPage() {
            />
         </div>
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          {/* 🔄 UPDATED: Options are now Active/Draft (Case Sensitive) */}
           <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_FILTERS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
@@ -151,7 +168,6 @@ export default function AdminBlogPage() {
         </div>
       </div>
 
-      {/* 🏛️ Data Table */}
       <div className="bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -174,7 +190,7 @@ export default function AdminBlogPage() {
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {filteredPosts.map((post) => {
-               const isDraft = post.status === "draft";
+               const isDraft = post.status === "Draft";
                return (
                 <tr key={post.id} className="hover:bg-zinc-50 transition-colors group">
                   <td className="p-6">
@@ -212,7 +228,16 @@ export default function AdminBlogPage() {
                       <Link href={`/admin/blog/edit/${post.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">
                         <Edit3 size={14} /> Edit
                       </Link>
-                      <button onClick={() => setDeleteModal({ show: true, id: post.id, title: post.title })} className="text-zinc-200 hover:text-red-600 transition-colors">
+                      {/* 🔄 UPDATED: Now passing the image_url to the modal state */}
+                      <button 
+                        onClick={() => setDeleteModal({ 
+                          show: true, 
+                          id: post.id, 
+                          title: post.title, 
+                          imageUrl: post.image_url 
+                        })} 
+                        className="text-zinc-200 hover:text-red-600 transition-colors"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </div>

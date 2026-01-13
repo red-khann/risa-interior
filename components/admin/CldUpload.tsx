@@ -23,11 +23,33 @@ export default function CldUpload({ onUploadSuccess }: { onUploadSuccess: (url: 
       const data = await res.json();
       
       setPreview(data.secure_url);
-      onUploadSuccess(data.secure_url); // 💡 Passes the URL back to the Admin Form
+      onUploadSuccess(data.secure_url); 
     } catch (err) {
       console.error("Upload failed", err);
     } finally {
       setUploading(false);
+    }
+  };
+
+  // 🔄 UPDATED: New function to delete image from Cloudinary if user clicks 'X'
+  const handleRemove = async () => {
+    if (!preview) return;
+
+    try {
+      // We call the internal API we created in Step 1
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: preview }),
+      });
+      
+      setPreview("");
+      onUploadSuccess(""); // Notify parent form that image is gone
+    } catch (err) {
+      console.error("Failed to delete from Cloudinary:", err);
+      // Even if cloud delete fails, we clear the UI for the user
+      setPreview("");
+      onUploadSuccess("");
     }
   };
 
@@ -42,8 +64,9 @@ export default function CldUpload({ onUploadSuccess }: { onUploadSuccess: (url: 
           <div className="relative w-full aspect-video">
             <img src={preview} className="w-full h-full object-cover" alt="Preview" />
             <button 
-              onClick={() => setPreview("")}
-              className="absolute top-2 right-2 bg-black text-white p-1 rounded-full hover:bg-red-500 transition-colors"
+              type="button" // 🔄 UPDATED: Added type="button" to prevent form submission
+              onClick={handleRemove} // 🔄 UPDATED: Now calls handleRemove instead of just setting state
+              className="absolute top-2 right-2 bg-black text-white p-1 rounded-full hover:bg-red-500 transition-colors z-10"
             >
               <X size={16} />
             </button>

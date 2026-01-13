@@ -22,7 +22,7 @@ export default function ProfessionalVisualCMS() {
   
   const [isPublishing, setIsPublishing] = useState(false)
   const [showNavWarning, setShowNavWarning] = useState(false)
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false) // 🆕 Success State
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false) 
   const [pendingTab, setPendingTab] = useState<string | null>(null)
 
   useEffect(() => { fetchContent() }, [])
@@ -37,6 +37,20 @@ export default function ProfessionalVisualCMS() {
     '/services/[slug]': 'service_detail_global',
     '/blog': 'blog_page',
     '/blog/[slug]': 'blog_detail_global'
+  };
+
+  // 🔄 UPDATED: Helper to call our Cloudinary Janitor API
+  const deleteFromCloudinary = async (url: string) => {
+    if (!url || !url.includes('cloudinary')) return;
+    try {
+      await fetch('/api/cloudinary/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+    } catch (err) {
+      console.error("Cleanup failed:", err);
+    }
   };
 
   useEffect(() => {
@@ -76,18 +90,30 @@ export default function ProfessionalVisualCMS() {
 
   const handlePublish = async () => {
     setIsPublishing(true)
+
+    // 🔄 UPDATED: Identify old images that are being replaced to clean Cloudinary
+    const replacedImages = content.filter(item => {
+      const isImage = item.section_key.toLowerCase().includes('image') || item.section_key.toLowerCase().includes('logo');
+      const hasChanged = drafts[item.id] !== originalContent[item.id];
+      return isImage && hasChanged && originalContent[item.id];
+    });
+
+    // Delete replaced images from Cloudinary
+    await Promise.all(replacedImages.map(item => deleteFromCloudinary(originalContent[item.id])));
+
     const updates = content.map(item => ({
       id: item.id,
       page_key: item.page_key,
       section_key: item.section_key,
       content_value: drafts[item.id]
     }))
+    
     const { error } = await supabase.from('site_content').upsert(updates)
     if (!error) {
       await logActivity('UPDATE', `Published visual changes`, 'CONTENT')
       setOriginalContent(drafts)
-      setShowSuccessPopup(true) // 🆕 Show custom popup
-      setTimeout(() => setShowSuccessPopup(false), 3000) // Auto-hide
+      setShowSuccessPopup(true) 
+      setTimeout(() => setShowSuccessPopup(false), 3000) 
     }
     setIsPublishing(false)
   }
@@ -189,6 +215,7 @@ export default function ProfessionalVisualCMS() {
                         </div>
                     )}
                     <div className="p-4 bg-zinc-50 border border-zinc-100 border-dashed rounded-sm hover:border-[#B89B5E]/50 transition-colors">
+                      {/* 🔄 UPDATED: CldUpload handleRemove is already built-in via Step 2, ensuring temp uploads are cleaned if 'X' is clicked */}
                       <CldUpload onUploadSuccess={(url) => setDrafts(prev => ({ ...prev, [item.id]: url }))} />
                     </div>
                   </div>
@@ -246,7 +273,25 @@ export default function ProfessionalVisualCMS() {
             <h3 className="text-[11px] uppercase tracking-[0.5em] font-black text-zinc-900 mb-4 italic">Unsaved Evolution</h3>
             <p className="text-zinc-500 text-[11px] leading-loose tracking-widest mb-10 font-bold opacity-70">The current vision has not been chronicled. Discard these edits to transition?</p>
             <div className="flex flex-col gap-4">
-              <button onClick={() => { setDrafts(originalContent); setActiveTab(pendingTab!); setShowNavWarning(false) }} className="w-full py-5 bg-[#1C1C1C] text-white text-[9px] uppercase font-black tracking-[0.4em] shadow-xl hover:bg-red-900 transition-colors">Discard & Transition</button>
+              <button 
+                onClick={async () => { 
+                  // 🔄 UPDATED: Identify draft images that were uploaded but now discarded
+                  const discardedImages = content.filter(item => {
+                    const isImage = item.section_key.toLowerCase().includes('image') || item.section_key.toLowerCase().includes('logo');
+                    const isNewUpload = drafts[item.id] !== originalContent[item.id];
+                    return isImage && isNewUpload && drafts[item.id];
+                  });
+                  // Clean up discarded Cloudinary uploads
+                  await Promise.all(discardedImages.map(item => deleteFromCloudinary(drafts[item.id])));
+
+                  setDrafts(originalContent); 
+                  setActiveTab(pendingTab!); 
+                  setShowNavWarning(false) 
+                }} 
+                className="w-full py-5 bg-[#1C1C1C] text-white text-[9px] uppercase font-black tracking-[0.4em] shadow-xl hover:bg-red-900 transition-colors"
+              >
+                Discard & Transition
+              </button>
               <button onClick={() => setShowNavWarning(false)} className="w-full py-5 bg-white border border-zinc-200 text-zinc-400 text-[9px] uppercase font-black tracking-[0.4em] hover:text-zinc-900 transition-colors">Return to Editor</button>
             </div>
           </div>

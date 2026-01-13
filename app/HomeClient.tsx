@@ -77,7 +77,7 @@ export default function HomeClient() {
               {ui.portfolio_subtitle}
             </h2>
             {/* 🎯 Changed to H2 for correct document outline */}
-            <p id="portfolio-title" className="text-5xl md:text-7xl font-bold tracking-tighter text-zinc-900 uppercase leading-[0.9]">
+            <p id="portfolio-title" className="text-5xl md:text-7xl font-bold tracking-tighter text-zinc-900 uppercase leading-[0.9] animate-in fade-in slide-in-from-bottom-8 duration-1000">
               {renderTitle(ui.portfolio_title)}
             </p>
           </header>
