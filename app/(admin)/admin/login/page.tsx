@@ -2,16 +2,17 @@
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Lock, Loader2, ChevronRight } from 'lucide-react';
+// ✅ Added Eye and EyeOff icons
+import { Lock, Loader2, ChevronRight, Eye, EyeOff } from 'lucide-react'; 
 import { logActivity } from '@/utils/supabase/logger';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // ✅ Visibility state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const supabase = createClient();
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +25,14 @@ export default function AdminLoginPage() {
       setError(loginError.message);
       setLoading(false);
     } else if (data.user) {
-      // 🛡️ Record the login event
-      await logActivity('LOGIN', 'Admin session started', 'AUTH');
+      // ✅ LOGIC: Identify device based on width to match AdminLayout (1024px)
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+      const deviceLabel = isMobile ? ' (Mobile)' : ' (Desktop)';
 
-      // ✅ FIX: Use window.location.href instead of router.push
-      // This forces a full page reload which guarantees the Layout and Sidebar 
-      // fetch the profile data correctly on the first load.
+      // 🛡️ Record the login event with device identity
+      await logActivity('LOGIN', `Admin session started${deviceLabel}`, 'AUTH');
+
+      // ✅ Force reload to initialize layout with fresh session
       window.location.href = '/admin/dashboard';
     }
   };
@@ -56,15 +59,26 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
-            <input 
-              type="password" 
-              placeholder="SECURITY KEY" 
-              required
-              autoComplete="new-password"
-              className="w-full bg-zinc-50 border border-zinc-100 p-5 text-[10px] font-bold tracking-widest outline-none focus:border-[#B89B5E] transition-all uppercase text-zinc-800 placeholder:text-zinc-300"
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-            />
+            
+            {/* ✅ PASSWORD INPUT WITH TOGGLE */}
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="SECURITY KEY" 
+                required
+                autoComplete="new-password"
+                className="w-full bg-zinc-50 border border-zinc-100 p-5 text-[10px] font-bold tracking-widest outline-none focus:border-[#B89B5E] transition-all uppercase text-zinc-800 placeholder:text-zinc-300 pr-14"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#B89B5E] transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && (
