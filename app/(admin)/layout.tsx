@@ -2,13 +2,14 @@
 import "../../styles/global.css";
 import { AdminSidebar } from "../../components/admin/AdminSidebar";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation"; 
+import { usePathname, useRouter } from "next/navigation"; 
 import { createClient } from "@/utils/supabase/client";
 import { 
   User, Menu, X, Folder, MessageSquare, 
   Settings, Briefcase, Newspaper, LayoutDashboard, LogOut 
 } from "lucide-react"; 
 import SessionGuard from "@/components/admin/SessionGuard"; 
+import { logActivity } from "@/utils/supabase/logger"; // ✅ Added Logger
 import Link from "next/link";
 
 export default function AdminLayout({
@@ -18,6 +19,7 @@ export default function AdminLayout({
 }) {
   const supabase = createClient();
   const pathname = usePathname();
+  const router = useRouter(); // ✅ Added Router for redirection
   const [profile, setProfile] = useState<{ full_name: string; avatar_url: string } | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -47,9 +49,16 @@ export default function AdminLayout({
     setIsMobileMenuOpen(false); 
   }, [pathname, supabase]);
 
+  // ✅ UPDATED: Mobile Logout matches Desktop Sidebar logic
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/admin/login";
+    // 🛡️ SYNC TO DASHBOARD: Log logout BEFORE signing out while session is still valid
+    await logActivity('LOGOUT', 'Admin session ended (Mobile)', 'AUTH');
+    
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      router.refresh();
+      window.location.href = "/"; // 🏠 Land on Home Page directly
+    }
   };
 
   return (
@@ -75,8 +84,9 @@ export default function AdminLayout({
                 </Link>
               ))}
               <div className="pt-8 border-t border-zinc-800 mt-6">
+                {/* ✅ Changed text to "Sign Out" for consistency */}
                 <button onClick={handleLogout} className="flex items-center gap-5 text-xl font-bold uppercase tracking-tighter text-red-500 w-full text-left">
-                  <LogOut size={20} /> Terminate Session
+                  <LogOut size={20} /> Sign Out
                 </button>
               </div>
             </nav>
@@ -96,7 +106,7 @@ export default function AdminLayout({
               <p className="text-2xl font-bold tracking-tighter leading-tight max-w-xs text-[#1C1C1C]">
                 CMS Content Management requires a <span className="font-serif italic font-light text-[#B89B5E]">larger screen</span> for live previews.
               </p>
-              <Link href="/admin/enquiries" className="mt-10 px-8 py-4 bg-[#1C1C1C] text-white text-[10px] uppercase tracking-widest font-bold">
+              <Link href="/admin/dashboard" className="mt-10 px-8 py-4 bg-[#1C1C1C] text-white text-[10px] uppercase tracking-widest font-bold">
                 Return to Pulse
               </Link>
             </div>
@@ -129,7 +139,6 @@ export default function AdminLayout({
               </div>
             </header>
 
-            {/* Content Area with Padding */}
             <div className="p-5 lg:p-10">
               {children}
             </div>
