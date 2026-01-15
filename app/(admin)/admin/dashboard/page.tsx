@@ -12,7 +12,6 @@ export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [timeFilter, setTimeFilter] = useState('All Time')
   
-  // ✅ NEW: Added mounted state to fix Hydration Mismatch (Prop className did not match)
   const [mounted, setMounted] = useState(false)
   
   const [data, setData] = useState({
@@ -52,7 +51,6 @@ export default function DashboardPage() {
       sQuery,
       bQuery,
       eQuery,
-      // ✅ FIXED: Using explicit constraint name 'admin_logs_admin_id_fkey' to ensure join works
       supabase
         .from('admin_logs')
         .select(`
@@ -97,13 +95,11 @@ export default function DashboardPage() {
     })
   }
 
-  // ✅ Client-side guard logic
   useEffect(() => {
     setMounted(true)
     fetchData()
   }, [timeFilter])
 
-  // ✅ Prevent mismatch error shown in image_3debf9.png
   if (!mounted) return null
 
   if (data.isLoading) {
@@ -117,21 +113,30 @@ export default function DashboardPage() {
   return (
     <div className="space-y-10 animate-in fade-in duration-700 relative text-zinc-800 pb-10">
 
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold">Studio Overview</h2>
-        <div className="relative group">
+      {/* 🏆 FIXED HEADER SECTION - Matches Enquiry/Project Style */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0 mb-8">
+        <div>
+          <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">
+            Studio Overview
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">
+            Dashboard
+          </h2>
+        </div>
+        
+        {/* TIME FILTER: Styled to match the premium dropdowns in Enquiries */}
+        <div className="relative w-full md:w-auto">
           <select
             value={timeFilter}
             onChange={e => setTimeFilter(e.target.value)}
-            className="appearance-none bg-white border border-zinc-100 px-6 py-2 pr-10 text-[9px] uppercase font-bold tracking-widest text-[#B89B5E] outline-none cursor-pointer hover:border-[#B89B5E] transition-all shadow-sm"
+            className="appearance-none w-full md:w-auto bg-white border border-zinc-100 px-6 py-3 pr-12 text-[10px] uppercase font-bold tracking-widest text-[#B89B5E] outline-none cursor-pointer hover:border-[#B89B5E] transition-all shadow-sm"
           >
             <option>Last 7 Days</option>
             <option>Last Month</option>
             <option>Last Year</option>
             <option>All Time</option>
           </select>
-          <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B89B5E] pointer-events-none" />
+          <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#B89B5E] pointer-events-none" />
         </div>
       </div>
 
@@ -156,7 +161,8 @@ export default function DashboardPage() {
                <Activity size={16} className="text-[#B89B5E]" />
                <h3 className="text-[11px] uppercase tracking-[0.4em] font-bold">Protocol Logs</h3>
             </div>
-            <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-6 py-2 bg-[#1C1C1C] text-white text-[9px] uppercase font-bold tracking-[0.2em] hover:bg-[#B89B5E] transition-all shadow-lg rounded-sm">
+            {/* ✅ FIXED: Added hidden md:flex to hide on mobile */}
+            <button onClick={() => setIsModalOpen(true)} className="hidden md:flex items-center gap-2 px-6 py-2 bg-[#1C1C1C] text-white text-[9px] uppercase font-bold tracking-[0.2em] hover:bg-[#B89B5E] transition-all shadow-lg rounded-sm">
               <Plus size={14} /> New Composition
             </button>
           </div>

@@ -8,7 +8,6 @@ import Link from "next/link";
 import { createClient } from '@/utils/supabase/client';
 import { logActivity } from '@/utils/supabase/logger';
 
-// 🛠️ Updated Categories to match your DB service_type presets
 const CATEGORIES = ["All", "Residential Architecture", "Commercial Design", "Spatial Consulting", "Turnkey Interior Solutions"];
 const STATUS_FILTERS = ["All Status", "Active", "Draft"];
 
@@ -20,8 +19,6 @@ export default function AdminServicesPage() {
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<any[]>([]);
-
-  // 🗑️ 🔄 UPDATED: Added imageUrl to state to handle potential Cloudinary cleanup
   const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
 
   async function fetchServices() {
@@ -37,7 +34,6 @@ export default function AdminServicesPage() {
 
   useEffect(() => { fetchServices(); }, []);
 
-  // 🔄 UPDATED: Helper to call your Cloudinary Janitor API
   const deleteFromCloudinary = async (url: string) => {
     try {
       await fetch('/api/cloudinary/delete', {
@@ -51,7 +47,6 @@ export default function AdminServicesPage() {
   };
 
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
-    // 🔄 UPDATED: Strictly enforcing case-sensitive 'Active' and 'Draft'
     const newStatus = currentStatus === 'Active' ? 'Draft' : 'Active';
     const { error } = await supabase.from('services').update({ status: newStatus }).eq('id', id);
     
@@ -61,21 +56,16 @@ export default function AdminServicesPage() {
     }
   };
 
-  // 🗑️ Logic: Themed Delete
   const confirmDelete = async () => {
     if (!deleteModal.id) return;
-
-    // 🔄 UPDATED: Delete from Cloudinary first if an image exists for this service
     if (deleteModal.imageUrl) {
       await deleteFromCloudinary(deleteModal.imageUrl);
     }
-    
     const { error } = await supabase.from('services').delete().eq('id', deleteModal.id);
     
     if (!error) {
       await logActivity('DELETE', deleteModal.title, 'SERVICE');
       setServices(prev => prev.filter(s => s.id !== deleteModal.id));
-      // 🔄 UPDATED: Clean reset of state
       setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
     }
   };
@@ -110,35 +100,35 @@ export default function AdminServicesPage() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 relative">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 relative pb-20 w-full overflow-x-hidden">
       
       {/* 🏛️ THEMED DELETE MODAL */}
       {deleteModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white border border-zinc-200 p-12 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="text-red-500" size={32} />
             </div>
             <h2 className="text-[12px] uppercase tracking-[0.4em] font-bold text-zinc-900 mb-2">Remove Expertise?</h2>
             <p className="text-zinc-400 text-[10px] uppercase tracking-widest leading-relaxed mb-8">
-               Are you certain you wish to delete <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>? This action is permanent.
+               Are you certain you wish to delete <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>?
             </p>
             <div className="flex gap-4">
-              {/* 🔄 UPDATED: Reset state on cancel */}
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
-              <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Delete</button>
+              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Cancel</button>
+              <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Confirm Delete</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Expertise</span>
-          <h2 className="text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Services Management</h2>
+          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Expertise Pulse</h2>
+          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Services Management</h2>
         </div>
-        <Link href="/admin/services/new">
+        <Link href="/admin/services/new" className="hidden md:block">
           <button className="bg-[#1C1C1C] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#B89B5E] transition-all flex items-center gap-3 shadow-lg rounded-sm">
             <Plus size={16} /> Add New Expertise
           </button>
@@ -146,7 +136,7 @@ export default function AdminServicesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm">
+      <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
         <div className="relative w-full md:w-80">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
           <input 
@@ -157,18 +147,56 @@ export default function AdminServicesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
+        <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
+          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_FILTERS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
           </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-zinc-100 shadow-xl overflow-hidden">
+      {/* 📱 MOBILE VIEW: Mirroring Enquiries Card Style with Toggles */}
+      <div className="md:hidden space-y-4 px-4">
+        {filteredServices.map((service) => {
+          const isDraft = service.status === "Draft";
+          return (
+            <div key={service.id} className="bg-white border border-zinc-100 p-6 rounded-[2rem] shadow-sm space-y-5">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-zinc-50 overflow-hidden flex items-center justify-center border border-zinc-100 shrink-0">
+                    <Briefcase size={18} className="text-zinc-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold uppercase tracking-tighter text-zinc-900 leading-none mb-1 truncate">{service.name}</h4>
+                    <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase truncate">{service.service_type || 'General Expertise'}</p>
+                  </div>
+                </div>
+                <div className={`w-2 h-2 rounded-full shrink-0 ${isDraft ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-zinc-50">
+                 <div className="flex items-center gap-2 overflow-hidden">
+                   <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest truncate">RISA Protocol</span>
+                 </div>
+                 
+                 <div className="flex items-center gap-5 shrink-0 pl-2">
+                    <button 
+                      onClick={() => handleStatusToggle(service.id, service.status, service.name)} 
+                      className="text-zinc-300"
+                    >
+                      {isDraft ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                 </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 💻 DESKTOP VIEW: Full Original Table */}
+      <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-[#1C1C1C] text-white">
@@ -191,12 +219,12 @@ export default function AdminServicesPage() {
                 <tr key={service.id} className="hover:bg-zinc-50 transition-colors group">
                   <td className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-[#1C1C1C] group-hover:text-[#B89B5E] transition-all shadow-sm">
+                      <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-[#1C1C1C] group-hover:text-[#B89B5E] transition-all shadow-sm shrink-0">
                         <Briefcase size={16} />
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#1C1C1C] tracking-tighter uppercase">{service.name}</p>
-                        <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase line-clamp-1">{service.description || 'No description'}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#1C1C1C] tracking-tighter uppercase truncate">{service.name}</p>
+                        <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase truncate">{service.description || 'No description'}</p>
                       </div>
                     </div>
                   </td>
@@ -219,7 +247,6 @@ export default function AdminServicesPage() {
                       <Link href={`/admin/services/edit/${service.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">
                         <Edit3 size={14} /> Edit
                       </Link>
-                      {/* 🔄 UPDATED: Passing service id, title, and image_url to modal */}
                       <button onClick={() => setDeleteModal({ show: true, id: service.id, title: service.name, imageUrl: service.image_url })} className="text-zinc-200 hover:text-red-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
@@ -231,6 +258,12 @@ export default function AdminServicesPage() {
           </tbody>
         </table>
       </div>
+
+      {filteredServices.length === 0 && (
+        <div className="py-20 text-center text-zinc-400 text-[10px] uppercase font-bold tracking-[0.4em]">
+          No expertise found in archive
+        </div>
+      )}
     </div>
   );
 }

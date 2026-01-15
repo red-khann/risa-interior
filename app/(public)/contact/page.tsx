@@ -47,27 +47,49 @@ export default function ContactPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const clientName = formData.get('client_name') as string;
+    const contactInfo = formData.get('contact_info') as string;
+    const description = formData.get('description') as string;
+
     const finalService = selectedService === "Other" 
-      ? formData.get('custom_service') 
+      ? formData.get('custom_service') as string
       : selectedService;
 
-    const { error } = await supabase.from('enquiries').insert([{
-      client_name: formData.get('client_name'),
-      contact_info: formData.get('contact_info'),
-      service_type: finalService,
-      description: formData.get('description'),
-      protocol_status: 'New Lead'
-    }]);
+    try {
+      // 1. Save to Supabase
+      const { error } = await supabase.from('enquiries').insert([{
+        client_name: clientName,
+        contact_info: contactInfo,
+        service_type: finalService,
+        description: description,
+        protocol_status: 'New Lead'
+      }]);
 
-    if (error) {
-      alert("Transmission failed: " + error.message);
-    } else {
+      if (error) throw error;
+
+      // 2. ⚡ 🔄 UPDATED: Trigger Email Notification via Resend
+      await fetch('/api/notify-enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: clientName,
+          email: contactInfo, // Mapping contact_info to email for the notification
+          phone: "See contact info", // Or add a specific phone field if needed
+          service: finalService,
+          message: description
+        }),
+      });
+
       setSubmitted(true);
       formRef.current?.reset();
       if (services.length > 0) setSelectedService(services[0].name); 
       setTimeout(() => setSubmitted(false), 5000);
+
+    } catch (err: any) {
+      alert("Transmission failed: " + err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -87,7 +109,6 @@ export default function ContactPage() {
               </h1>
             </header>
 
-            {/* 🎯 SEO: Using <address> tag signals local business relevance to Google */}
             <address className="not-italic space-y-8">
               <div>
                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-zinc-900 mb-4">
@@ -108,7 +129,6 @@ export default function ContactPage() {
             </address>
           </div>
 
-          {/* Form Container */}
           <section className="bg-white p-10 md:p-16 border border-zinc-100 shadow-sm relative" aria-label="Inquiry Form">
             {submitted && (
               <div role="alert" className="absolute inset-0 bg-white/95 z-10 flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-500">

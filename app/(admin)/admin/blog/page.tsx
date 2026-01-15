@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from "next/link";
 import { 
   Plus, Search as SearchIcon, Edit3, Trash2, 
-  Eye, EyeOff, ArrowUpDown, Loader2, AlertTriangle 
+  Eye, EyeOff, ArrowUpDown, Loader2, AlertTriangle, Newspaper, Calendar
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { logActivity } from '@/utils/supabase/logger';
@@ -21,7 +21,6 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true);
 
   // 🗑️ Themed Delete Modal State
-  // 🔄 UPDATED: Added imageUrl to state to track what needs deletion in Cloudinary
   const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
 
   async function fetchPosts() {
@@ -37,7 +36,6 @@ export default function AdminBlogPage() {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  // 🔄 UPDATED: Helper to call your Cloudinary Janitor API
   const deleteFromCloudinary = async (url: string) => {
     try {
       await fetch('/api/cloudinary/delete', {
@@ -60,21 +58,15 @@ export default function AdminBlogPage() {
     }
   };
 
-  // 🗑️ Logic: Themed Delete
   const confirmDelete = async () => {
     if (!deleteModal.id) return;
-
-    // 🔄 UPDATED: Delete from Cloudinary first if an image URL exists
     if (deleteModal.imageUrl) {
       await deleteFromCloudinary(deleteModal.imageUrl);
     }
-    
     const { error } = await supabase.from('blog').delete().eq('id', deleteModal.id);
-    
     if (!error) {
       await logActivity('DELETE', deleteModal.title, 'JOURNAL');
       setPosts(prev => prev.filter(p => p.id !== deleteModal.id));
-      // 🔄 UPDATED: Reset all modal fields
       setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
     }
   };
@@ -112,41 +104,43 @@ export default function AdminBlogPage() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 relative">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 relative pb-20 w-full overflow-x-hidden">
       
       {/* 🏛️ THEMED DELETE MODAL */}
       {deleteModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white border border-zinc-200 p-12 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="text-red-500" size={32} />
             </div>
             <h2 className="text-[12px] uppercase tracking-[0.4em] font-bold text-zinc-900 mb-2">Delete Narrative?</h2>
             <p className="text-zinc-400 text-[10px] uppercase tracking-widest leading-relaxed mb-8">
-              Are you certain you wish to remove <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>? This action is permanent.
+              Are you certain you wish to remove <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>?
             </p>
             <div className="flex gap-4">
-              {/* 🔄 UPDATED: Clear state on cancel */}
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Retain</button>
+              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Cancel</button>
               <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Confirm Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex justify-between items-end">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Journal</span>
-          <h2 className="text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Journal Management</h2>
+          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Journal Pulse</h2>
+          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Journal Management</h2>
         </div>
-        <Link href="/admin/blog/new">
+        <Link href="/admin/blog/new" className="hidden md:block">
           <button className="bg-[#1C1C1C] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#B89B5E] transition-all flex items-center gap-3 shadow-lg rounded-sm">
             <Plus size={16} /> Write New Narrative
           </button>
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm">
+      {/* COMMAND BAR */}
+      <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
         <div className="relative w-full md:w-64">
            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
            <input 
@@ -157,18 +151,66 @@ export default function AdminBlogPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
            />
         </div>
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-          {/* 🔄 UPDATED: Options are now Active/Draft (Case Sensitive) */}
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
+        
+        <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
+          {/* Status Filter - Hidden on Mobile to follow your Project Pulse request */}
+          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_FILTERS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
-            {BLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
+            {BLOG_CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="bg-white border border-zinc-100 shadow-xl overflow-hidden">
+      {/* 📱 MOBILE VIEW: Mirroring Enquiries Card Style with Toggles */}
+      <div className="md:hidden space-y-4 px-4">
+        {filteredPosts.map((post) => {
+          const isDraft = post.status === "Draft";
+          return (
+            <div key={post.id} className="bg-white border border-zinc-100 p-6 rounded-[2rem] shadow-sm space-y-5">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-zinc-50 overflow-hidden flex items-center justify-center border border-zinc-100 shrink-0">
+                    {post.image_url ? (
+                      <img src={post.image_url} className="w-full h-full object-cover grayscale" alt="" />
+                    ) : (
+                      <Newspaper size={18} className="text-zinc-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold uppercase tracking-tighter text-zinc-900 leading-none mb-1 truncate">{post.title}</h4>
+                    <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase truncate">{post.category}</p>
+                  </div>
+                </div>
+                <div className={`w-2 h-2 rounded-full shrink-0 ${isDraft ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-zinc-50">
+                 <div className="flex items-center gap-2 overflow-hidden">
+                   <Calendar size={10} className="text-zinc-300 shrink-0" />
+                   <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest truncate">
+                     {new Date(post.date || post.created_at).toLocaleDateString()}
+                   </span>
+                 </div>
+                 
+                 {/* MOBILE TOGGLE - Status Only */}
+                 <div className="flex items-center gap-5 shrink-0 pl-2">
+                    <button 
+                      onClick={() => handleStatusToggle(post.id, post.status, post.title)} 
+                      className="text-zinc-300"
+                    >
+                      {isDraft ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                 </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 💻 DESKTOP VIEW: Full Original Table */}
+      <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-[#1C1C1C] text-white">
@@ -228,7 +270,6 @@ export default function AdminBlogPage() {
                       <Link href={`/admin/blog/edit/${post.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">
                         <Edit3 size={14} /> Edit
                       </Link>
-                      {/* 🔄 UPDATED: Now passing the image_url to the modal state */}
                       <button 
                         onClick={() => setDeleteModal({ 
                           show: true, 
@@ -248,6 +289,12 @@ export default function AdminBlogPage() {
           </tbody>
         </table>
       </div>
+
+      {filteredPosts.length === 0 && (
+        <div className="py-20 text-center text-zinc-400 text-[10px] uppercase font-bold tracking-[0.4em]">
+          No narratives found in archive
+        </div>
+      )}
     </div>
   );
 }
