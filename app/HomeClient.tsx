@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Hero } from "../components/sections/Hero";
-import { ProjectCard } from "../components/shared/ProjectCard";
-import { WorkProcedure } from "../components/sections/WorkProcedure";
+import { Hero } from "@/components/sections/Hero";
+import { ProjectCard } from "@/components/shared/ProjectCard";
+import { WorkProcedure } from "@/components/sections/WorkProcedure";
 import { createClient } from '@/utils/supabase/client';
 import Link from "next/link";
-import { useContent } from '../components/PreviewProvider'; 
+import { useContent } from '@/components/PreviewProvider'; 
 import { Loader2 } from 'lucide-react';
 
 export default function HomeClient() {

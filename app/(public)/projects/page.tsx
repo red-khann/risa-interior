@@ -14,11 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
     .single();
 
   return {
-    title: "Portfolio | RISA Studio - Architectural Excellence & Luxury Design",
+    title: "Portfolio | RISA Interior - Architectural Excellence & Luxury Design",
     description: data?.content_value || "Explore our curated archive of luxury residential and commercial architectural projects.",
     keywords: ["Architectural Portfolio", "Luxury Interior Design", "Modern Architecture", "RISA Projects"],
     openGraph: {
-      title: "RISA Studio Portfolio | Selected Works",
+      title: "RISA Interior Portfolio | Selected Works",
       description: "A study in structural honesty and light-filled minimalist architecture.",
       type: 'website',
     },

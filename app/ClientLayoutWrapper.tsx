@@ -3,9 +3,9 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { PreviewProvider } from "../components/PreviewProvider";
-import { Navbar } from "../components/layout/Navbar";
-import { Footer } from "../components/layout/Footer";
+import { PreviewProvider } from "@/components/PreviewProvider";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 export default function ClientLayoutWrapper({
   children,

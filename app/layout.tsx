@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../styles/global.css";
+import "@/styles/global.css";
 import ClientLayoutWrapper from "./ClientLayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -16,7 +16,7 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
-  title: "RISA Studio Manager",
+  title: "RISA Interior & Contractors",
   description: "Bespoke Architecture & Interior Management",
 };
 

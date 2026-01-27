@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
     .single();
 
   return {
-    title: "Journal | RISA Studio - Architectural Perspectives",
+    title: "Journal | RISA Interior - Architectural Perspectives",
     description: data?.content_value || "Explore our latest chronicles on minimalist design and architecture.",
-    keywords: ["Architecture Blog", "Interior Design Trends", "RISA Studio Journal"],
+    keywords: ["Architecture Blog", "Interior Design Trends", "RISA Interior Journal"],
   };
 }
 
