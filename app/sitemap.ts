@@ -3,13 +3,13 @@ import { createClient } from '@/utils/supabase/server';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
-  const baseUrl = 'https://risa-interior.in'; // 🎯 Replace with your actual domain
+  const baseUrl = 'https://www.risainterior.in'; // 🎯 Corrected domain
 
-  // 1. Fetch all active slugs
-  const { data: projects } = await supabase.from('projects').select('slug, updated_at').eq('status', 'Active');
-  const { data: blogs } = await supabase.from('blog').select('slug, updated_at').ilike('status', 'active');
-  const { data: services } = await supabase.from('services').select('slug').eq('status', 'Active');
-
+  const [{ data: projects }, { data: blogs }, { data: services }] = await Promise.all([
+    supabase.from('projects').select('slug, updated_at').eq('status', 'Active'),
+    supabase.from('blog').select('slug, updated_at').eq('status', 'Active'),
+    supabase.from('services').select('slug').eq('status', 'Active'),
+  ]);
   // 2. Static Pages
   const staticPages = ['', '/about', '/services', '/projects', '/blog', '/contact'].map((route) => ({
     url: `${baseUrl}${route}`,
