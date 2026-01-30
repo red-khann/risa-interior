@@ -33,6 +33,7 @@ export default function AboutClient() {
     return parts.map((part, i) => {
       if (part.startsWith('[') && part.endsWith(']')) {
         return (
+          // 🎯 Restored: Using the original grey (text-zinc-400) for the italicized text
           <span key={i} className="font-serif italic text-zinc-400">
             {part.slice(1, -1)}
           </span>
@@ -56,13 +57,13 @@ export default function AboutClient() {
   }, [supabase]);
 
   if (loadingCount) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
-      <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
+    <div className="min-h-screen bg-[var(--bg-warm)] flex items-center justify-center">
+      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
     </div>
   );
 
   return (
-    <main className="pt-32 pb-24 bg-[#F7F5F2] min-h-screen selection:bg-[#B89B5E]/10">
+    <main className="pt-32 pb-24 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/10">
       <article className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           
@@ -78,7 +79,8 @@ export default function AboutClient() {
 
           <div className="space-y-16">
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              <p className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-black mb-8 italic">
+              {/* 🎯 Restored: Using the original grey (text-zinc-400) for the subtitle */}
+              <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-400 font-black mb-8 italic">
                 {content.subtitle}
               </p>
               
@@ -105,13 +107,13 @@ export default function AboutClient() {
               </div>
             </section>
 
-            <blockquote className="bg-white border-l-4 border-[#B89B5E] p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+            <blockquote className="bg-white border-l-4 border-[var(--accent-gold)] p-12 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
               <span className="absolute top-0 right-0 text-9xl text-zinc-50 opacity-10 font-serif font-black tracking-tighter" aria-hidden="true">"</span>
               <p className="italic text-zinc-800 font-serif leading-relaxed text-2xl relative z-10">
                 "{content.quote}"
               </p>
               <footer className="flex items-center gap-4 mt-8 relative z-10">
-                <div className="w-8 h-[1px] bg-[#B89B5E]" aria-hidden="true" />
+                <div className="w-8 h-[1px] bg-[var(--accent-gold)]" aria-hidden="true" />
                 <cite className="text-[10px] not-italic uppercase tracking-[0.4em] font-black text-zinc-900">
                   {content.author}
                 </cite>

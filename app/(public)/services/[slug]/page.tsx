@@ -6,7 +6,6 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// 🎯 SEO: Dynamic Metadata Generation for Search Engines
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
@@ -17,10 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('slug', slug)
     .single();
 
-  if (!service) return { title: "Service Protocol | RISA Studio" };
+  if (!service) return { title: "Service Protocol | RISA Interior & Contractors" };
 
-  const title = `${service.name} | ${service.service_type} Excellence | RISA Studio`;
-  const description = service.meta_description || `Professional ${service.name} services by RISA Studio.`;
+  const title = `${service.name} | ${service.service_type} | RISA Interior`;
+  const description = service.meta_description || `Professional ${service.name} services by RISA Interior & Contractors.`;
 
   return {
     title,
@@ -32,10 +31,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [service.image_url],
       type: 'website',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [service.image_url],
+    }
   };
 }
 
-// 🎯 Page Component: Unwraps params and boots the Client UI
 export default async function Page({ params }: Props) {
   const { slug } = await params;
   return <ServiceDetailClient slug={slug} />;

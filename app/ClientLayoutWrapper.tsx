@@ -19,13 +19,11 @@ export default function ClientLayoutWrapper({
 
   useEffect(() => {
     const getData = async () => {
-      // Fetch site content for live updates
       const { data } = await supabase
         .from('site_content')
         .select('page_key, section_key, content_value');
       
       if (data) {
-        // Transform Supabase Array to Object mapping
         const initialMap = data.reduce((acc: any, item: any) => ({
           ...acc, 
           [`${item.page_key}:${item.section_key}`]: item.content_value
@@ -39,7 +37,7 @@ export default function ClientLayoutWrapper({
 
   return (
     <PreviewProvider initialData={formattedContent}>
-      {/* Hide site nav for Admin panel */}
+      {/* 🎯 Site Nav is hidden for Admin, Navbar and Footer now use brand colors */}
       {!isAdmin && <Navbar />} 
       
       <main className="min-h-screen">

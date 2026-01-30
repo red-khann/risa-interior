@@ -5,7 +5,6 @@ import BlogClient from './BlogClient';
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = createClient();
   
-  // Fetch specific SEO data for the blog archive
   const { data } = await supabase
     .from('site_content')
     .select('content_value')
@@ -14,9 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
     .single();
 
   return {
-    title: "Journal | RISA Interior - Architectural Perspectives",
-    description: data?.content_value || "Explore our latest chronicles on minimalist design and architecture.",
-    keywords: ["Architecture Blog", "Interior Design Trends", "RISA Interior Journal"],
+    title: "Journal | RISA Interior & Contractors - Architectural Perspectives",
+    description: data?.content_value || "Explore our latest chronicles on minimalist design, architectural integrity, and professional contracting.",
+    keywords: ["Architecture Blog", "Interior Design Bareilly", "RISA Interior Journal", "Contracting Trends"],
   };
 }
 

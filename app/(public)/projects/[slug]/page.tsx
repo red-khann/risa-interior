@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import { createClient } from '@/utils/supabase/server';
 import ProjectDetailClient from './ProjectDetailClient';
 
-// 🎯 SEO: Dynamic Metadata Generation
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = createClient();
   const { data: project } = await supabase
@@ -11,10 +10,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .eq('slug', params.slug)
     .single();
 
-  if (!project) return { title: "Project Archive | RISA Studio" };
+  if (!project) return { title: "Project Archive | RISA Interior & Contractors" };
 
-  const title = `${project.title} | ${project.category} in ${project.city} | RISA Studio`;
-  const description = project.meta_description || `Explore the architectural details of ${project.title}, a ${project.category} project by RISA Studio.`;
+  const title = `${project.title} | ${project.category} in ${project.city} | RISA Interior`;
+  const description = project.meta_description || `Explore the architectural details of ${project.title}, a ${project.category} project by RISA Interior & Contractors.`;
 
   return {
     title,

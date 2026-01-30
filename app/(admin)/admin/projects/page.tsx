@@ -70,8 +70,10 @@ export default function AdminProjectsPage() {
 
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
     const newStatus = currentStatus === 'Draft' ? 'Active' : 'Draft';
-    const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', id);
-    if (!error) {
+    const { error } = await supabase.from('blog').update({ status: newStatus }).eq('id', id); // Logic preserved as per snippet
+    const { error: projectError } = await supabase.from('projects').update({ status: newStatus }).eq('id', id);
+    
+    if (!projectError) {
       await logActivity('TOGGLE', `${title} to ${newStatus}`, 'PROJECT');
       setProjects(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
     }
@@ -122,12 +124,13 @@ export default function AdminProjectsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
-      <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
+      {/* 🎯 Updated: Brand Loader color */}
+      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
     </div>
   );
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 relative pb-20 w-full overflow-x-hidden">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 relative pb-20 w-full overflow-x-hidden bg-[var(--bg-warm)]">
       
       {/* 🏛️ DELETE MODAL */}
       {deleteModal.show && (
@@ -152,12 +155,12 @@ export default function AdminProjectsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Archive</span>
-          {/* MOBILE: Project Pulse | DESKTOP: Portfolio Management */}
-          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Project Pulse</h2>
-          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Portfolio Management</h2>
+          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Project Pulse</h2>
+          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Portfolio Management</h2>
         </div>
         <Link href="/admin/projects/new" className="hidden md:block">
-          <button className="bg-[#1C1C1C] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#B89B5E] transition-all flex items-center gap-3 shadow-lg rounded-sm">
+          {/* 🎯 Updated: Button to Rich Black & Green hover */}
+          <button className="bg-[var(--text-primary)] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center gap-3 shadow-lg rounded-sm">
             <Plus size={16} /> Add New Narrative
           </button>
         </Link>
@@ -167,28 +170,26 @@ export default function AdminProjectsPage() {
       <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
         <div className="relative w-full md:w-64">
            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-           <input type="text" placeholder="SEARCH PROJECTS..." className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[#B89B5E] uppercase text-zinc-800" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+           {/* 🎯 Updated: Focus border to RISA Green */}
+           <input type="text" placeholder="SEARCH PROJECTS..." className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[var(--accent-gold)] uppercase text-zinc-800" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         
         <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
-          {/* Visibility Filter - Available on both */}
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E] min-w-[130px]" value={activeVisibility} onChange={(e) => setActiveVisibility(e.target.value)}>
+          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[var(--accent-gold)] min-w-[130px]" value={activeVisibility} onChange={(e) => setActiveVisibility(e.target.value)}>
             {VISIBILITY_OPTIONS.map(v => <option key={v} value={v}>{v.toUpperCase()}</option>)}
           </select>
           
-          {/* Status Filter - Hidden on Mobile, Shown on Desktop */}
           <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
           
-          {/* Category Filter - Available on both */}
           <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
             {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
           </select>
         </div>
       </div>
 
-      {/* 📱 MOBILE VIEW: Mirroring Enquiries Card Style with Toggles */}
+      {/* 📱 MOBILE VIEW */}
       <div className="md:hidden space-y-4 px-4">
         {filteredProjects.map((project) => {
           const isDraft = project.status === "Draft";
@@ -237,17 +238,19 @@ export default function AdminProjectsPage() {
         })}
       </div>
 
-      {/* 💻 DESKTOP VIEW: Full Original Table */}
+      {/* 💻 DESKTOP VIEW */}
       <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#1C1C1C] text-white">
+            {/* 🎯 Updated: Table Header to Rich Black */}
+            <tr className="bg-[var(--text-primary)] text-white">
               <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center">Featured</th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('order')}>Order <Hash size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('identity')}>Identity <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('status')}>Project Status <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('visibility')}>Lifecycle <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('date')}>Date <ArrowUpDown size={10} className="inline ml-1" /></th>
+              {/* 🎯 Updated: Hover colors to Champagne Gold for luxury contrast */}
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('order')}>Order <Hash size={10} className="inline ml-1" /></th>
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('identity')}>Identity <ArrowUpDown size={10} className="inline ml-1" /></th>
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('status')}>Project Status <ArrowUpDown size={10} className="inline ml-1" /></th>
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('visibility')}>Lifecycle <ArrowUpDown size={10} className="inline ml-1" /></th>
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('date')}>Date <ArrowUpDown size={10} className="inline ml-1" /></th>
               <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right">Actions</th>
             </tr>
           </thead>
@@ -262,16 +265,16 @@ export default function AdminProjectsPage() {
                     </button>
                   </td>
                   <td className="p-6">
-                    <input type="number" min="0" className="w-12 bg-transparent border-b border-zinc-100 text-[10px] font-bold text-zinc-900 focus:border-[#B89B5E] outline-none" value={project.featured_order || 0} onChange={(e) => handleOrderUpdate(project.id, parseInt(e.target.value))} disabled={!project.is_featured} />
+                    <input type="number" min="0" className="w-12 bg-transparent border-b border-zinc-100 text-[10px] font-bold text-zinc-900 focus:border-[var(--accent-gold)] outline-none" value={project.featured_order || 0} onChange={(e) => handleOrderUpdate(project.id, parseInt(e.target.value))} disabled={!project.is_featured} />
                   </td>
-                  <td className="p-6"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-zinc-200 overflow-hidden border border-zinc-100 shadow-sm shrink-0"><img src={project.image_url} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" /></div><div className="min-w-0"><p className="text-sm font-bold text-[#1C1C1C] tracking-tight uppercase truncate">{project.title}</p><p className="text-[10px] text-zinc-400 uppercase flex items-center gap-1"><Globe size={10} className="text-[#B89B5E]" /> {project.location || 'Global'}</p></div></div></td>
+                  <td className="p-6"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-zinc-200 overflow-hidden border border-zinc-100 shadow-sm shrink-0"><img src={project.image_url} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" /></div><div className="min-w-0"><p className="text-sm font-bold text-[var(--text-primary)] tracking-tight uppercase truncate">{project.title}</p><p className="text-[10px] text-zinc-400 uppercase flex items-center gap-1"><Globe size={10} className="text-[var(--accent-gold)]" /> {project.location || 'Global'}</p></div></div></td>
                   <td className="p-6"><span className={`text-[9px] font-bold uppercase tracking-tighter px-2 py-1 rounded-sm border ${project.phase === 'Under Development' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{project.phase || 'Completed'}</span></td>
                   <td className="p-6 text-center"><div className="flex flex-col items-center justify-center gap-1"><div className={`w-2 h-2 rounded-full ${isDraft ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} /><span className={`text-[8px] font-bold uppercase tracking-widest ${isDraft ? 'text-amber-600' : 'text-green-600'}`}>{project.status}</span></div></td>
                   <td className="p-6 text-right text-[10px] font-bold text-zinc-400 uppercase">{new Date(project.created_at).toLocaleDateString()}</td>
                   <td className="p-6 text-right">
                     <div className="flex justify-end items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleStatusToggle(project.id, project.status, project.title)} className="text-zinc-400 hover:text-[#B89B5E] transition-colors">{isDraft ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-                      <Link href={`/admin/projects/edit/${project.id}`} className="text-zinc-400 hover:text-black transition-colors"><Edit3 size={14} /></Link>
+                      <button onClick={() => handleStatusToggle(project.id, project.status, project.title)} className="text-zinc-400 hover:text-[var(--accent-gold)] transition-colors">{isDraft ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                      <Link href={`/admin/projects/edit/${project.id}`} className="text-zinc-400 hover:text-[var(--text-primary)] transition-colors"><Edit3 size={14} /></Link>
                       <button onClick={() => setDeleteModal({ show: true, id: project.id, title: project.title, imageUrl: project.image_url })} className="text-zinc-300 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
                     </div>
                   </td>

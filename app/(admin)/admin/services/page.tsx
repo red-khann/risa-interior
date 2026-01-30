@@ -95,7 +95,8 @@ export default function AdminServicesPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
-      <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
+      {/* 🎯 Branding: Loader color to RISA Green */}
+      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
     </div>
   );
 
@@ -125,11 +126,13 @@ export default function AdminServicesPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Expertise</span>
-          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Expertise Pulse</h2>
-          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Services Management</h2>
+          {/* 🎯 Branding: Rich Black text */}
+          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Expertise Pulse</h2>
+          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Services Management</h2>
         </div>
         <Link href="/admin/services/new" className="hidden md:block">
-          <button className="bg-[#1C1C1C] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#B89B5E] transition-all flex items-center gap-3 shadow-lg rounded-sm">
+          {/* 🎯 Branding: Button Rich Black & Green hover */}
+          <button className="bg-[var(--text-primary)] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center gap-3 shadow-lg rounded-sm">
             <Plus size={16} /> Add New Expertise
           </button>
         </Link>
@@ -139,16 +142,18 @@ export default function AdminServicesPage() {
       <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
         <div className="relative w-full md:w-80">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+          {/* 🎯 Branding: Focus color RISA Green */}
           <input 
             type="text" 
             placeholder="SEARCH SERVICES..."
-            className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[#B89B5E] uppercase text-zinc-800"
+            className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[var(--accent-gold)] uppercase text-zinc-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
-          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
+          {/* 🎯 Branding: Filter highlight to RISA Green */}
+          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[var(--accent-gold)] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_FILTERS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
           <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
@@ -157,7 +162,7 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      {/* 📱 MOBILE VIEW: Mirroring Enquiries Card Style with Toggles */}
+      {/* 📱 MOBILE VIEW */}
       <div className="md:hidden space-y-4 px-4">
         {filteredServices.map((service) => {
           const isDraft = service.status === "Draft";
@@ -184,7 +189,7 @@ export default function AdminServicesPage() {
                  <div className="flex items-center gap-5 shrink-0 pl-2">
                     <button 
                       onClick={() => handleStatusToggle(service.id, service.status, service.name)} 
-                      className="text-zinc-300"
+                      className="text-zinc-300 hover:text-[var(--accent-gold)]"
                     >
                       {isDraft ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -195,19 +200,21 @@ export default function AdminServicesPage() {
         })}
       </div>
 
-      {/* 💻 DESKTOP VIEW: Full Original Table */}
+      {/* 💻 DESKTOP VIEW */}
       <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#1C1C1C] text-white">
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('name')}>
-                Expertise Identity <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'name' ? 'text-[#B89B5E]' : ''}`} />
+            {/* 🎯 Branding: Header background to Rich Black */}
+            <tr className="bg-[var(--text-primary)] text-white">
+              {/* 🎯 Branding: Hover colors to Champagne Gold for high contrast on black */}
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('name')}>
+                Expertise Identity <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'name' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('service_type')}>
-                Category <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'service_type' ? 'text-[#B89B5E]' : ''}`} />
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('service_type')}>
+                Category <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'service_type' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('status')}>
-                Protocol Status <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'status' ? 'text-[#B89B5E]' : ''}`} />
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('status')}>
+                Protocol Status <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'status' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
               <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right">Actions</th>
             </tr>
@@ -219,7 +226,7 @@ export default function AdminServicesPage() {
                 <tr key={service.id} className="hover:bg-zinc-50 transition-colors group">
                   <td className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-[#1C1C1C] group-hover:text-[#B89B5E] transition-all shadow-sm shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-all shadow-sm shrink-0">
                         <Briefcase size={16} />
                       </div>
                       <div className="min-w-0">
@@ -241,7 +248,7 @@ export default function AdminServicesPage() {
                   </td>
                   <td className="p-6 text-right">
                     <div className="flex justify-end items-center gap-6">
-                      <button onClick={() => handleStatusToggle(service.id, service.status, service.name)} className="text-zinc-300 hover:text-[#B89B5E] transition-colors">
+                      <button onClick={() => handleStatusToggle(service.id, service.status, service.name)} className="text-zinc-300 hover:text-[var(--accent-gold)] transition-colors">
                         {isDraft ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                       <Link href={`/admin/services/edit/${service.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">

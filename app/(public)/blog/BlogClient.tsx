@@ -25,8 +25,6 @@ export default function BlogClient() {
     async function fetchBlogPosts() {
       setLoading(true);
       try {
-        // 🎯 FIX: Removing strict status filter to ensure data arrives, 
-        // then we filter in JS to be safe with capitalization.
         const { data: blogData, error } = await supabase
           .from('blog')
           .select('*')
@@ -35,7 +33,6 @@ export default function BlogClient() {
         if (error) throw error;
 
         if (blogData) {
-          // Only show posts that are explicitly 'Active' (case insensitive)
           const activeOnly = blogData.filter(p => 
             p.status?.toLowerCase() === 'active'
           );
@@ -82,11 +79,13 @@ export default function BlogClient() {
   }, []);
 
   return (
-    <main className="pt-32 pb-20 bg-[#F7F5F2] min-h-screen selection:bg-[#B89B5E]/10">
+    // 🎯 bg-[#F7F5F2] swapped for var(--bg-warm)
+    <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/10">
       <section className="max-w-7xl mx-auto px-6 md:px-12">
         
         <header className="mb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-bold mb-4 italic">
+          {/* 🎯 Color swapped for var(--accent-gold) */}
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[var(--accent-gold)] font-bold mb-4 italic">
               {pageSubtitle}
           </p>
           <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -97,9 +96,10 @@ export default function BlogClient() {
         <nav className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-20 pb-10 border-b border-zinc-200 relative z-[50]" aria-label="Journal Filters">
           <div className="flex items-center gap-8 w-full lg:w-auto">
             <div className="relative w-full md:w-64" ref={catRef}>
+              {/* 🎯 hover text swapped for var(--accent-gold) */}
               <button 
                 onClick={() => setCatOpen(!catOpen)}
-                className="w-full flex justify-between items-center py-2 text-[10px] uppercase tracking-[0.3em] font-black text-zinc-900 outline-none hover:text-[#B89B5E] transition-all"
+                className="w-full flex justify-between items-center py-2 text-[10px] uppercase tracking-[0.3em] font-black text-zinc-900 outline-none hover:text-[var(--accent-gold)] transition-all"
               >
                 <span>{activeCategory}</span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${catOpen ? 'rotate-180' : ''}`} />
@@ -110,8 +110,9 @@ export default function BlogClient() {
                     <button
                       key={cat}
                       onClick={() => { setActiveCategory(cat); setCatOpen(false); }}
+                      // 🎯 Active text swapped for var(--accent-gold)
                       className={`w-full text-left px-6 py-4 text-[9px] uppercase tracking-[0.2em] font-bold transition-colors border-b border-zinc-50 last:border-none ${
-                        activeCategory === cat ? "bg-zinc-50 text-[#B89B5E]" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                        activeCategory === cat ? "bg-zinc-50 text-[var(--accent-gold)]" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
                       }`}
                     >
                       {cat}
@@ -123,22 +124,24 @@ export default function BlogClient() {
 
             <button 
               onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-              className="group flex items-center gap-3 py-2 text-[10px] uppercase tracking-[0.3em] font-black text-zinc-400 hover:text-[#B89B5E] transition-colors"
+              className="group flex items-center gap-3 py-2 text-[10px] uppercase tracking-[0.3em] font-black text-zinc-400 hover:text-[var(--accent-gold)] transition-colors"
             >
               <span className="hidden md:inline">{sortOrder === "newest" ? "Newest Chronicles" : "Oldest Chronicles"}</span>
               <div className="flex flex-col items-center justify-center">
-                <ArrowUp size={12} className={sortOrder === "newest" ? "text-[#B89B5E]" : "text-zinc-200"} />
-                <ArrowDown size={12} className={`-mt-1 ${sortOrder === "oldest" ? "text-[#B89B5E]" : "text-zinc-200"}`} />
+                {/* 🎯 Icon states swapped for var(--accent-gold) */}
+                <ArrowUp size={12} className={sortOrder === "newest" ? "text-[var(--accent-gold)]" : "text-zinc-200"} />
+                <ArrowDown size={12} className={`-mt-1 ${sortOrder === "oldest" ? "text-[var(--accent-gold)]" : "text-zinc-200"}`} />
               </div>
             </button>
           </div>
 
           <div className="relative w-full lg:w-72 group">
-            <Search size={14} className="absolute left-0 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-[#B89B5E] transition-colors" />
+            {/* 🎯 Focus colors swapped for var(--accent-gold) */}
+            <Search size={14} className="absolute left-0 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-[var(--accent-gold)] transition-colors" />
             <input
               type="text"
               placeholder="SEARCH CHRONICLES..."
-              className="bg-transparent border-b border-zinc-300 py-2 pl-8 text-[10px] tracking-widest outline-none focus:border-[#B89B5E] w-full uppercase font-black text-zinc-800 transition-all"
+              className="bg-transparent border-b border-zinc-300 py-2 pl-8 text-[10px] tracking-widest outline-none focus:border-[var(--accent-gold)] w-full uppercase font-black text-zinc-800 transition-all"
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
@@ -147,7 +150,7 @@ export default function BlogClient() {
         <div className="max-w-5xl mx-auto space-y-32 md:space-y-48">
           {loading ? (
               <div className="py-40 flex flex-col items-center justify-center gap-4 text-center uppercase tracking-widest text-[10px] text-zinc-400">
-                <Loader2 className="animate-spin text-[#B89B5E]" size={20} />
+                <Loader2 className="animate-spin text-[var(--accent-gold)]" size={20} />
                 Archiving Chronicles...
               </div>
           ) : filteredPosts.length === 0 ? (
@@ -173,12 +176,14 @@ export default function BlogClient() {
 
               <div className="md:col-span-5 space-y-8">
                 <div className="flex justify-between items-center text-[9px] uppercase tracking-[0.4em] font-black text-zinc-400">
-                  <span className="text-[#B89B5E] italic font-serif lowercase tracking-normal text-sm">#{post.category?.replace(/\s+/g, '')}</span>
+                  {/* 🎯 Tag color swapped for var(--accent-gold) */}
+                  <span className="text-[var(--accent-gold)] italic font-serif lowercase tracking-normal text-sm">#{post.category?.replace(/\s+/g, '')}</span>
                   <time dateTime={post.date}>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</time>
                 </div>
                 
                 <Link href={`/blog/${post.slug}`}>
-                  <h2 className="text-3xl lg:text-5xl font-bold leading-[1.0] text-[#1C1C1C] group-hover:text-[#B89B5E] transition-colors uppercase tracking-tighter">
+                  {/* 🎯 Title colors swapped for var(--accent-gold) and var(--text-primary) */}
+                  <h2 className="text-3xl lg:text-5xl font-bold leading-[1.0] text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors uppercase tracking-tighter">
                     {post.title}
                   </h2>
                 </Link>
@@ -188,7 +193,8 @@ export default function BlogClient() {
                 </blockquote>
                 
                 <Link href={`/blog/${post.slug}`}>
-                  <button className="text-[10px] uppercase tracking-[0.5em] font-black text-[#B89B5E] border-b-2 border-[#B89B5E]/10 pb-1 pt-4 hover:border-[#B89B5E] transition-all">
+                  {/* 🎯 Button and border swapped for var(--accent-gold) */}
+                  <button className="text-[10px] uppercase tracking-[0.5em] font-black text-[var(--accent-gold)] border-b-2 border-[var(--accent-gold)]/10 pb-1 pt-4 hover:border-[var(--accent-gold)] transition-all">
                     Read Full Story —
                   </button>
                 </Link>

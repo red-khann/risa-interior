@@ -5,7 +5,6 @@ import ProjectsClient from './ProjectsClient';
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = createClient();
   
-  // 🎯 SEO: Fetching specific project page SEO description from site_content
   const { data } = await supabase
     .from('site_content')
     .select('content_value')
@@ -14,9 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
     .single();
 
   return {
-    title: "Portfolio | RISA Interior - Architectural Excellence & Luxury Design",
-    description: data?.content_value || "Explore our curated archive of luxury residential and commercial architectural projects.",
-    keywords: ["Architectural Portfolio", "Luxury Interior Design", "Modern Architecture", "RISA Projects"],
+    title: "Portfolio | RISA Interior & Contractors - Architectural Excellence",
+    description: data?.content_value || "Explore our curated archive of luxury residential and commercial architectural projects by RISA Interior & Contractors.",
+    keywords: ["Architectural Portfolio", "Luxury Interior Design", "Bareilly Contractors", "RISA Projects"],
     openGraph: {
       title: "RISA Interior Portfolio | Selected Works",
       description: "A study in structural honesty and light-filled minimalist architecture.",

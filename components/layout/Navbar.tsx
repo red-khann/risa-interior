@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image'; 
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { X } from 'lucide-react';
@@ -8,15 +9,13 @@ import { useContent } from '../PreviewProvider';
 export const Navbar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  
   const content = useContent();
 
   const getVal = (key: string, fallback: string) => {
     return content[`global:${key}`] || content[key] || fallback;
   };
 
-  const brandName = getVal('brand_name', "RISA");
-  const brandTagline = getVal('brand_tagline', "Interior & Contractors");
+  const brandName = getVal('brand_name', "RISA Interior");
   
   let links = [];
   try {
@@ -30,42 +29,42 @@ export const Navbar = () => {
       { label: 'Contact', path: '/contact' }
     ];
   } catch (e) {
-    console.error("Navbar Navigation Parse Error");
     links = [{ label: 'Home', path: '/' }, { label: 'Contact', path: '/contact' }];
   }
 
   return (
-    // 🎯 SEO: Using the <nav> element with an aria-label helps screen readers and bots understand the context
     <nav 
       aria-label="Main Navigation"
-      className="fixed top-0 w-full z-[100] bg-[#F7F5F2] border-b border-zinc-200 py-4 lg:py-6 selection:bg-[#B89B5E]/30"
+      // 🎯 bar stays slim with low padding
+      className="fixed top-0 w-full z-[100] bg-[var(--bg-warm)] border-b border-zinc-200 py-2 lg:py-3 selection:bg-[var(--accent-gold)]/30"
     >
-      <div className="max-w-[1440px] mx-auto px-8 md:px-16 flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 flex items-center justify-between gap-4">
         
-        {/* 🏛️ Dynamic Branding */}
-        <Link href="/" className="group flex flex-col items-start" title={`${brandName} - ${brandTagline}`}>
-          {/* 🎯 H1: Kept for branding, but added 'p' for tagline to maintain heading hierarchy */}
-          <h1 className="text-3xl lg:text-4xl font-black tracking-[-0.02em] text-[#1C1C1C] leading-none uppercase">
-            {brandName}
-          </h1>
-          <div className="w-full h-[2px] bg-[#1C1C1C] mt-1 mb-1 group-hover:bg-[#B89B5E] transition-colors duration-300" aria-hidden="true" />
-          <p className="text-[7px] lg:text-[8px] uppercase tracking-[0.4em] font-bold text-zinc-500 leading-none">
-            {brandTagline}
-          </p>
+        {/* 🏛️ ULTRA ZOOMED LOGO */}
+        <Link href="/" className="shrink-0" title={brandName}>
+          {/* 🎯 Using scale-130 (Mobile) and scale-150 (Desktop) for a bold look without increasing bar height */}
+          <div className="relative w-48 h-16 lg:w-[280px] lg:h-20 transform scale-[1.3] lg:scale-[1.5] origin-left transition-transform duration-500 hover:scale-[1.35] lg:hover:scale-[1.55]">
+            <Image 
+              src="/logo.svg" 
+              alt="RISA Interior & Contractors"
+              fill
+              className="object-contain object-left"
+              priority
+              unoptimized
+            />
+          </div>
         </Link>
 
-        {/* Dynamic Desktop Navigation */}
-        {/* 🎯 SEO: Using a list <ul> for navigation is a standard best practice for crawlers */}
-        <ul className="hidden md:flex items-center gap-10 list-none">
+        {/* Desktop Navigation */}
+        <ul className="hidden md:flex items-center gap-8 lg:gap-12 list-none shrink">
           {links.map((link: any) => {
             const isActive = link.path === '/' ? pathname === '/' : pathname.startsWith(link.path);
             return (
-              <li key={link.path}>
+              <li key={link.path} className="whitespace-nowrap">
                 <Link 
                   href={link.path} 
-                  aria-current={isActive ? "page" : undefined}
-                  className={`text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 hover:text-[#B89B5E] ${
-                    isActive ? 'text-[#B89B5E]' : 'text-zinc-500'
+                  className={`text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black transition-all duration-300 hover:text-[var(--accent-gold)] ${
+                    isActive ? 'text-[var(--accent-gold)]' : 'text-zinc-900'
                   }`}
                 >
                   {link.label}
@@ -77,25 +76,22 @@ export const Navbar = () => {
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-[#1C1C1C] z-[110]" 
+          className="md:hidden text-[var(--text-primary)] z-[110]" 
           onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
-          aria-label={isOpen ? "Close menu" : "Open menu"}
         >
           {isOpen ? <X size={28} /> : (
             <div className="space-y-1.5" aria-hidden="true">
-              <div className="w-6 h-[2px] bg-current"></div>
-              <div className="w-4 h-[2px] bg-current ml-auto"></div>
+              <div className="w-7 h-[2px] bg-zinc-900"></div>
+              <div className="w-5 h-[2px] bg-zinc-900 ml-auto"></div>
             </div>
           )}
         </button>
 
         {/* Mobile Menu Overlay */}
         <div 
-          className={`fixed inset-0 bg-[#F7F5F2] z-[105] flex flex-col items-center justify-center gap-8 transition-transform duration-500 ease-in-out ${
+          className={`fixed inset-0 bg-[var(--bg-warm)] z-[105] flex flex-col items-center justify-center gap-10 transition-transform duration-700 ease-in-out ${
             isOpen ? "translate-y-0" : "-translate-y-full"
           }`}
-          aria-hidden={!isOpen}
         >
           {links.map((link: any) => {
             const isActive = link.path === '/' ? pathname === '/' : pathname.startsWith(link.path);
@@ -104,8 +100,7 @@ export const Navbar = () => {
                 key={link.path} 
                 href={link.path} 
                 onClick={() => setIsOpen(false)}
-                aria-current={isActive ? "page" : undefined}
-                className={`text-2xl uppercase tracking-[0.3em] font-bold ${isActive ? 'text-[#B89B5E]' : 'text-[#1C1C1C]'}`}
+                className={`text-2xl uppercase tracking-[0.4em] font-black ${isActive ? 'text-[var(--accent-gold)]' : 'text-zinc-900'}`}
               >
                 {link.label}
               </Link>

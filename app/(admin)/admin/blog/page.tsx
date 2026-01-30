@@ -99,7 +99,8 @@ export default function AdminBlogPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
-      <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
+      {/* 🎯 Loader updated to RISA Green */}
+      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
     </div>
   );
 
@@ -129,11 +130,13 @@ export default function AdminBlogPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
         <div>
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Journal</span>
-          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Journal Pulse</h2>
-          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[#1C1C1C]">Journal Management</h2>
+          {/* 🎯 Branding: Rich Black text */}
+          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Journal Pulse</h2>
+          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Journal Management</h2>
         </div>
         <Link href="/admin/blog/new" className="hidden md:block">
-          <button className="bg-[#1C1C1C] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#B89B5E] transition-all flex items-center gap-3 shadow-lg rounded-sm">
+          {/* 🎯 Branding: Button Rich Black & Green hover */}
+          <button className="bg-[var(--text-primary)] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center gap-3 shadow-lg rounded-sm">
             <Plus size={16} /> Write New Narrative
           </button>
         </Link>
@@ -143,18 +146,19 @@ export default function AdminBlogPage() {
       <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
         <div className="relative w-full md:w-64">
            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+           {/* 🎯 Branding: Focus color RISA Green */}
            <input 
             type="text" 
             placeholder="SEARCH ARTICLES..."
-            className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[#B89B5E] uppercase text-zinc-800"
+            className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[var(--accent-gold)] uppercase text-zinc-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
            />
         </div>
         
         <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
-          {/* Status Filter - Hidden on Mobile to follow your Project Pulse request */}
-          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[#B89B5E] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
+          {/* Status Filter */}
+          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[var(--accent-gold)] min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
             {STATUS_FILTERS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
           <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
@@ -163,7 +167,7 @@ export default function AdminBlogPage() {
         </div>
       </div>
 
-      {/* 📱 MOBILE VIEW: Mirroring Enquiries Card Style with Toggles */}
+      {/* 📱 MOBILE VIEW */}
       <div className="md:hidden space-y-4 px-4">
         {filteredPosts.map((post) => {
           const isDraft = post.status === "Draft";
@@ -194,12 +198,12 @@ export default function AdminBlogPage() {
                    </span>
                  </div>
                  
-                 {/* MOBILE TOGGLE - Status Only */}
                  <div className="flex items-center gap-5 shrink-0 pl-2">
                     <button 
                       onClick={() => handleStatusToggle(post.id, post.status, post.title)} 
                       className="text-zinc-300"
                     >
+                      {/* 🎯 Interaction: Toggle icons */}
                       {isDraft ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                  </div>
@@ -209,23 +213,25 @@ export default function AdminBlogPage() {
         })}
       </div>
 
-      {/* 💻 DESKTOP VIEW: Full Original Table */}
+      {/* 💻 DESKTOP VIEW */}
       <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#1C1C1C] text-white">
+            {/* 🎯 Branding: Header background is Rich Black */}
+            <tr className="bg-[var(--text-primary)] text-white">
               <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold">Preview</th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('title')}>
-                Identity <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'title' ? 'text-[#B89B5E]' : ''}`} />
+              {/* 🎯 Branding: Hover colors reflect the Champagne contrast logic */}
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)]" onClick={() => handleSort('title')}>
+                Identity <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'title' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('category')}>
-                Narrative Type <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'category' ? 'text-[#B89B5E]' : ''}`} />
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)]" onClick={() => handleSort('category')}>
+                Narrative Type <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'category' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('status')}>
-                Lifecycle <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'status' ? 'text-[#B89B5E]' : ''}`} />
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[var(--accent-light)]" onClick={() => handleSort('status')}>
+                Lifecycle <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'status' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[#B89B5E]" onClick={() => handleSort('date')}>
-                Date <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'date' ? 'text-[#B89B5E]' : ''}`} />
+              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[var(--accent-light)]" onClick={() => handleSort('date')}>
+                Date <ArrowUpDown size={10} className={`inline ml-1 ${sortConfig.key === 'date' ? 'text-[var(--accent-gold)]' : ''}`} />
               </th>
               <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right">Actions</th>
             </tr>
@@ -264,7 +270,7 @@ export default function AdminBlogPage() {
                   </td>
                   <td className="p-6 text-right">
                     <div className="flex justify-end items-center gap-6">
-                      <button onClick={() => handleStatusToggle(post.id, post.status, post.title)} className="text-zinc-300 hover:text-[#B89B5E] transition-colors">
+                      <button onClick={() => handleStatusToggle(post.id, post.status, post.title)} className="text-zinc-300 hover:text-[var(--accent-gold)] transition-colors">
                         {isDraft ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                       <Link href={`/admin/blog/edit/${post.id}`} className="flex items-center gap-2 text-[10px] uppercase font-bold text-zinc-400 hover:text-black transition-colors">

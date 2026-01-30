@@ -1,9 +1,7 @@
 import { Metadata } from 'next';
-import { createClient } from '@/utils/supabase/server'; // Ensure you have a server-side client
-import HomeClient from './HomeClient'; // We will move your current code here
+import { createClient } from '@/utils/supabase/server';
+import HomeClient from './HomeClient';
 
-// 🎯 SEO: Server-side Metadata fetching
-// This allows Google to see your homepage SEO settings without needing JavaScript
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = createClient();
   const { data } = await supabase
@@ -14,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
     .single();
 
   return {
-    title: "RISA Interior | Luxury Interior Design & Architectural Excellence",
-    description: data?.content_value || "Architectural precision meets the poetry of light and shadow. Explore our selected works in luxury interior design.",
-    keywords: ["Interior Design", "Architecture", "Luxury Homes", "Contractors", "Minimalism"],
+    title: "RISA Interior & Contractors | Luxury Architectural Excellence",
+    description: data?.content_value || "Architectural precision meets the poetry of light and shadow. Explore our selected works in luxury interior design and contracting.",
+    keywords: ["Interior Design", "Architecture", "Bareilly Contractors", "Luxury Homes", "RISA Interior"],
     openGraph: {
       title: "RISA Interior | Architectural Integrity",
       description: "Selected works in high-end interior design and architectural planning.",

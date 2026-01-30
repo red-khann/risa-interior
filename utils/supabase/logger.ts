@@ -1,7 +1,7 @@
 import { createClient } from './client'
 
 export const logActivity = async (
-  // Expanded actions to include AUTH events
+  // 🎯 Included 'TIMEOUT' and maintained your action sequence
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'TOGGLE' | 'LOGIN' | 'LOGOUT' | 'TIMEOUT', 
   itemName: string,
   category: 'PROJECT' | 'SERVICE' | 'JOURNAL' | 'CONTENT' | 'AUTH'
@@ -15,12 +15,15 @@ export const logActivity = async (
     return;
   }
 
-  // item_name is used to store the specific reason or message for the dashboard
+  // 🎯 Mapped strictly to all 7 columns including the new 'module' column
   const { error: dbError } = await supabase.from('admin_logs').insert({
     action_type: action,
-    item_name: `[${category}] ${itemName}`,
+    // 🎯 Maintains your bracketed prefix format
+    item_name: `[${category}] ${itemName}`, 
     admin_id: user.id,        
-    admin_email: user.email    
+    admin_email: user.email,
+    module: category, // 🎯 Fills the module column with the category (PROJECT, AUTH, etc.)
+    created_at: new Date().toISOString()
   })
 
   if (dbError) console.error("❌ DATABASE LOG ERROR:", dbError.message);

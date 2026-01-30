@@ -46,14 +46,17 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="bg-[#121212] text-white pt-24 pb-8 selection:bg-[#B89B5E]/30" aria-labelledby="footer-heading">
+    <footer className="bg-[var(--text-primary)] text-white pt-24 pb-8 selection:bg-[var(--accent-light)]/30" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">Footer</h2>
       <div className="max-w-[1440px] mx-auto px-8 md:px-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
           
           {/* Info & Socials */}
           <section className="space-y-8">
-            <h3 className="text-xl font-bold tracking-widest uppercase">{footerData.infoLabel}</h3>
+            <div className="inline-block border-b border-white/20 pb-2">
+               {/* 🎯 Information Heading: Strictly White */}
+               <h3 className="text-xl font-bold tracking-widest uppercase text-white">{footerData.infoLabel}</h3>
+            </div>
             <p className="text-zinc-500 text-sm leading-relaxed max-w-xs uppercase tracking-wider italic font-serif">
               {footerData.aboutText}
             </p>
@@ -61,7 +64,8 @@ export const Footer = () => {
               {socials.map((social, i) => (
                 <a key={i} href={social.url} target="_blank" rel="noopener noreferrer" 
                    aria-label={social.label}
-                   className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-[#B89B5E] hover:border-[#B89B5E] transition-all duration-500">
+                 
+                   className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-white hover:bg-[var(--accent-light)] hover:border-[var(--accent-light)] transition-all duration-500">
                   {social.icon}
                 </a>
               ))}
@@ -70,7 +74,9 @@ export const Footer = () => {
 
           {/* Navigation */}
           <nav className="space-y-10" aria-label="Footer Navigation">
-            <h4 className="text-[12px] uppercase tracking-[0.3em] font-bold text-[#B89B5E]">{footerData.navLabel}</h4>
+            <div className="inline-block border-b border-[var(--accent-light)]/20 pb-2">
+              <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-[var(--accent-light)]">{footerData.navLabel}</h4>
+            </div>
             <ul className="space-y-4">
               {links.map((link: any) => (
                 <li key={link.path}>
@@ -84,7 +90,9 @@ export const Footer = () => {
 
           {/* Contact Details */}
           <section className="space-y-10">
-            <h4 className="text-[12px] uppercase tracking-[0.3em] font-bold text-[#B89B5E]">{footerData.contactLabel}</h4>
+            <div className="inline-block border-b border-[var(--accent-light)]/20 pb-2">
+              <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-[var(--accent-light)]">{footerData.contactLabel}</h4>
+            </div>
             <address className="not-italic space-y-4 text-[11px] text-zinc-400 uppercase tracking-widest font-bold">
               <p className="leading-relaxed">{footerData.location}</p>
               <p><a href={`mailto:${footerData.email}`} className="hover:text-white transition-colors">{footerData.email}</a></p>
@@ -94,7 +102,9 @@ export const Footer = () => {
 
           {/* Newsletter */}
           <section className="space-y-10">
-            <h4 className="text-[12px] uppercase tracking-[0.3em] font-bold text-[#B89B5E]">{footerData.newsLabel}</h4>
+            <div className="inline-block border-b border-[var(--accent-light)]/20 pb-2">
+              <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-[var(--accent-light)]">{footerData.newsLabel}</h4>
+            </div>
             <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
               <label htmlFor="footer-email" className="sr-only">Email Address</label>
               <input 
@@ -102,9 +112,9 @@ export const Footer = () => {
                 type="email" 
                 placeholder={footerData.newsPlaceholder} 
                 required
-                className="bg-zinc-900 border border-zinc-800 p-4 text-[10px] tracking-widest focus:border-[#B89B5E] outline-none" 
+                className="bg-zinc-900 border border-zinc-800 p-4 text-[10px] tracking-widest focus:border-[var(--accent-light)] outline-none" 
               />
-              <button type="submit" className="bg-zinc-800 py-4 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[#B89B5E] transition-all">
+              <button type="submit" className="bg-zinc-800 py-4 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--accent-gold)] transition-all">
                 {footerData.newsButton}
               </button>
             </form>

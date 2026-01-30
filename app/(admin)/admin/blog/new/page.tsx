@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NextLink from 'next/link'; 
@@ -18,7 +18,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
   const [loading, setLoading] = useState(false);
   const [fetchedServices, setFetchedServices] = useState<any[]>([]);
 
-  // 📝 Form State
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     content: initialData?.content || '',
@@ -34,7 +33,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
     initialData?.image_url ? { preview: initialData.image_url } : null
   );
 
-  // 🔄 UPDATED: Helper to call our Cloudinary Janitor API
   const deleteFromCloudinary = async (url: string) => {
     try {
       await fetch('/api/cloudinary/delete', {
@@ -62,7 +60,8 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
   }, [formData.content]);
   
   const seoAudit = useMemo(() => {
-    const slug = formData.title.toLowerCase().replaceAll(' ', '-').replace(/[^\-]+/g, '');
+    // 🎯 Logic: Enhanced slug generation
+    const slug = formData.title.toLowerCase().replaceAll(' ', '-').replace(/[^\w-]+/g, '');
     const keywordInTitle = formData.focusKeyword.length > 2 && 
       formData.title.toLowerCase().includes(formData.focusKeyword.toLowerCase());
     
@@ -90,15 +89,12 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
     try {
       let finalImageUrl = imageAsset?.preview || '';
       
-      // 🔄 UPDATED: Handle Image Replacement Logic
       if (imageAsset?.file) {
-        // If we are editing and a new file is uploaded, delete the old one from Cloudinary
         if (isEdit && initialData?.image_url) {
           await deleteFromCloudinary(initialData.image_url);
         }
         finalImageUrl = await uploadFile(imageAsset.file);
       } 
-      // If the user removed the image (imageAsset is null) during an edit
       else if (isEdit && !imageAsset && initialData?.image_url) {
         await deleteFromCloudinary(initialData.image_url);
         finalImageUrl = '';
@@ -110,7 +106,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
         excerpt: formData.excerpt || formData.content.slice(0, 150) + '...',
         date: initialData?.date || new Date().toISOString().split('T')[0],
         category: formData.category,
-        // 🔄 UPDATED: Enforcing "Active" and "Draft" casing
         status: targetStatus === 'Active' ? 'Active' : 'Draft',
         image_url: finalImageUrl,
         hero_alt_text: formData.heroAltText,
@@ -127,7 +122,6 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
       if (error) throw error;
 
       await logActivity(isEdit ? 'UPDATE' : 'CREATE', formData.title, 'JOURNAL');
-
       router.push('/admin/blog');
       router.refresh();
     } catch (err: any) {
@@ -136,14 +130,14 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-20 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[var(--bg-warm)] pb-20 animate-in fade-in duration-700">
       
       <header className="border-b border-zinc-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 py-4 px-8 text-zinc-800">
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
           <div className="flex items-center gap-8">
             <NextLink href="/admin/blog" className="group flex items-center gap-3 transition-all">
-              <div className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center group-hover:border-[#B89B5E] transition-all">
-                <ArrowLeft size={14} className="group-hover:text-[#B89B5E] transition-colors" />
+              <div className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center group-hover:border-[var(--accent-gold)] transition-all">
+                <ArrowLeft size={14} className="group-hover:text-[var(--accent-gold)] transition-colors" />
               </div>
               <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-zinc-400 group-hover:text-zinc-800 transition-colors">Journal Archive</span>
             </NextLink>
@@ -153,12 +147,11 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
             </div>
           </div>
           <div className="flex items-center gap-4">
-              {/* 🔄 UPDATED: Passing "Draft" exactly */}
               <button onClick={() => handleSubmit('Draft')} disabled={loading} className="px-6 py-2 border border-zinc-200 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all text-zinc-600 flex items-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} {isEdit ? 'Sync Draft' : 'Save Draft'}
               </button>
-              {/* 🔄 UPDATED: Passing "Active" exactly */}
-              <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('Active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[#1C1C1C] text-white hover:bg-[#B89B5E]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+              {/* 🎯 Branding: Button background Rich Black & Green hover */}
+              <button disabled={!seoAudit.isReady || loading} onClick={() => handleSubmit('Active')} className={`px-6 py-2 text-[10px] uppercase font-bold tracking-widest transition-all flex items-center gap-2 ${seoAudit.isReady ? 'bg-[var(--text-primary)] text-white hover:bg-[var(--accent-gold)]' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
                 <Send size={14} /> {isEdit ? 'Sync Live' : 'Publish Post'}
               </button>
           </div>
@@ -169,8 +162,9 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
         <div className="lg:col-span-8 space-y-12">
           <section className="bg-white p-12 border border-zinc-100 shadow-sm space-y-10">
             <div className="space-y-4">
-              <label className="flex items-center gap-2 text-[9px] uppercase font-bold tracking-[0.4em] text-[#B89B5E]"><Sparkles size={12} /> Narrative Title</label>
-              <input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full text-5xl font-light tracking-tighter italic font-serif border-b border-zinc-100 py-6 outline-none focus:border-[#B89B5E] transition-all text-zinc-800" placeholder="The Alchemy of Light & Space..." />
+              {/* 🎯 Branding: Green accent */}
+              <label className="flex items-center gap-2 text-[9px] uppercase font-bold tracking-[0.4em] text-[var(--accent-gold)]"><Sparkles size={12} /> Narrative Title</label>
+              <input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full text-5xl font-light tracking-tighter italic font-serif border-b border-zinc-100 py-6 outline-none focus:border-[var(--accent-gold)] transition-all text-zinc-800" placeholder="The Alchemy of Light & Space..." />
             </div>
 
             <div className="space-y-6">
@@ -200,7 +194,7 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
           <section className="bg-white p-8 border border-zinc-100 space-y-8 shadow-sm">
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-900">Journal Cover</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div className="relative aspect-[16/9] bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-4 hover:border-[#B89B5E] transition-all cursor-pointer group overflow-hidden">
+              <div className="relative aspect-[16/9] bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-4 hover:border-[var(--accent-gold)] transition-all cursor-pointer group overflow-hidden">
                 {imageAsset ? (
                   <>
                     <img src={imageAsset.preview} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
@@ -214,15 +208,16 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
                   </>
                 ) : (
                   <>
-                    <Camera size={32} className="text-zinc-200 group-hover:text-[#B89B5E]" />
+                    <Camera size={32} className="text-zinc-200 group-hover:text-[var(--accent-gold)]" />
                     <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Upload Cover</p>
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && setImageAsset({file: e.target.files[0], preview: URL.createObjectURL(e.target.files[0])})} />
                   </>
                 )}
               </div>
               <div className="space-y-4">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-[#B89B5E]">SEO Alt Text</label>
-                <textarea value={formData.heroAltText} onChange={(e) => setFormData({...formData, heroAltText: e.target.value})} rows={4} placeholder="Describe this image..." className="w-full p-4 bg-zinc-50 border-none text-[11px] italic text-zinc-500 outline-none resize-none" />
+                <label className="text-[9px] uppercase font-bold tracking-widest text-[var(--accent-gold)]">SEO Alt Text</label>
+                {/* 🎯 Table Field: hero_alt_text utilized */}
+                <textarea value={formData.heroAltText} onChange={(e) => setFormData({...formData, heroAltText: e.target.value})} rows={4} placeholder="Describe this image for Google Indexing..." className="w-full p-4 bg-zinc-50 border-none text-[11px] italic text-zinc-500 outline-none resize-none focus:ring-1 focus:ring-[var(--accent-gold)]" />
               </div>
             </div>
           </section>
@@ -233,7 +228,7 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
             <div className="space-y-4">
               <label className="flex items-center gap-2 text-[9px] uppercase font-bold text-zinc-400"><Hash size={14} /> Category</label>
               <div className="relative">
-                <select value={PRESET_BLOG_CATEGORIES.includes(formData.category) ? formData.category : "Custom"} className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold uppercase tracking-widest outline-none appearance-none cursor-pointer" onChange={(e) => {
+                <select value={PRESET_BLOG_CATEGORIES.includes(formData.category) ? formData.category : "Custom"} className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold uppercase tracking-widest outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-[var(--accent-gold)]" onChange={(e) => {
                     const val = e.target.value;
                     setFormData({...formData, category: val === "Custom" ? "" : val});
                 }}>
@@ -243,14 +238,15 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none" size={14} />
               </div>
               {(!PRESET_BLOG_CATEGORIES.includes(formData.category) || formData.category === "") && (
-                <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="NEW TAXONOMY..." className="w-full p-4 bg-zinc-50 border border-zinc-100 text-[10px] font-bold uppercase tracking-widest outline-none text-[#B89B5E] animate-in slide-in-from-top-2" />
+                <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="NEW TAXONOMY..." className="w-full p-4 bg-zinc-50 border border-zinc-100 text-[10px] font-bold uppercase tracking-widest outline-none text-[var(--accent-gold)] animate-in slide-in-from-top-2" />
               )}
             </div>
 
             <div className="space-y-4 pt-4 border-t border-zinc-50">
               <label className="flex items-center gap-2 text-[9px] uppercase font-bold text-zinc-400"><LinkIcon size={14} /> Service Linking</label>
               <div className="relative">
-                <select value={formData.relatedService} className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold uppercase tracking-widest outline-none text-zinc-800 appearance-none cursor-pointer" onChange={(e) => setFormData({...formData, relatedService: e.target.value})}>
+                {/* 🎯 Table Field: related_service utilized */}
+                <select value={formData.relatedService} className="w-full p-4 bg-zinc-50 border-none text-[10px] font-bold uppercase tracking-widest outline-none text-zinc-800 appearance-none cursor-pointer focus:ring-1 focus:ring-[var(--accent-gold)]" onChange={(e) => setFormData({...formData, relatedService: e.target.value})}>
                   <option value="">None Selected</option>
                   {fetchedServices.map((service, idx) => (
                     <option key={idx} value={service.name}>{service.name}</option>
@@ -261,14 +257,20 @@ export default function NewBlogForm({ initialData, isEdit }: { initialData?: any
             </div>
           </div>
 
-          <div className="bg-black p-8 text-white space-y-8 shadow-2xl rounded-sm border-t-4 border-[#B89B5E]">
+          {/* 🎯 Branding: SEO box anchored in Rich Black */}
+          <div className="bg-[var(--text-primary)] p-8 text-white space-y-8 shadow-2xl rounded-sm border-t-4 border-[var(--accent-gold)]">
             <header className="flex items-center justify-between border-b border-zinc-800 pb-4">
-              <h3 className="text-[11px] uppercase tracking-[0.3em] font-bold text-white flex items-center gap-2"><Search size={14} className="text-[#B89B5E]" /> SEO AUDIT</h3>
+              {/* 🎯 Contrast: Label updated to high-contrast Champagne Gold */}
+              <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[var(--accent-light)] flex items-center gap-2">
+                <Search size={14} /> Seo Audit
+              </h3>
               <div className={`w-3 h-3 rounded-full transition-all duration-500 ${seoAudit.isReady ? 'bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.4)]' : 'bg-amber-500'}`} />
             </header>
             <div className="space-y-5">
-              <input value={formData.focusKeyword} onChange={(e) => setFormData({...formData, focusKeyword: e.target.value})} placeholder="FOCUS KEYWORD" className="w-full bg-zinc-900 border border-zinc-800 p-4 text-[10px] font-bold tracking-widest text-[#B89B5E] outline-none" />
-              <textarea value={formData.metaDescription} onChange={(e) => setFormData({...formData, metaDescription: e.target.value})} rows={3} placeholder="META DESCRIPTION" className="w-full bg-zinc-900 border border-zinc-800 p-4 text-[10px] font-bold tracking-widest text-white outline-none resize-none" />
+              {/* 🎯 Table Field: focus_keyword utilized with Champagne Gold text */}
+              <input value={formData.focusKeyword} onChange={(e) => setFormData({...formData, focusKeyword: e.target.value})} placeholder="FOCUS KEYWORD" className="w-full bg-zinc-900 border border-zinc-800 p-4 text-[10px] font-bold tracking-widest text-[var(--accent-light)] outline-none focus:border-[var(--accent-gold)]" />
+              {/* 🎯 Table Field: meta_description utilized */}
+              <textarea value={formData.metaDescription} onChange={(e) => setFormData({...formData, metaDescription: e.target.value})} rows={3} placeholder="META DESCRIPTION (120-160 chars)" className="w-full bg-zinc-900 border border-zinc-800 p-4 text-[10px] font-bold tracking-widest text-white outline-none resize-none focus:border-[var(--accent-gold)]" />
             </div>
           </div>
         </div>

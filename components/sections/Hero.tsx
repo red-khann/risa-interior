@@ -19,11 +19,13 @@ export const Hero = () => {
   };
 
   return (
-    // 🎯 Changed to 'header' for better semantic hierarchy
-    <header className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-[#F7F5F2]">
-      {/* Background Watermark - aria-hidden as it's purely decorative */}
+    // 🎯 Use --bg-warm for background consistency
+    <header className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-[var(--bg-warm)]">
+      
+      {/* Background Watermark */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 select-none pointer-events-none opacity-[0.04] z-0" aria-hidden="true">
-        <p className="text-[25vw] font-bold uppercase tracking-tighter leading-none text-zinc-900">
+        {/* 🎯 Fetches current --text-primary (Rich Black) */}
+        <p className="text-[25vw] font-bold uppercase tracking-tighter leading-none text-[var(--text-primary)]">
           {heroData.watermark}
         </p>
       </div>
@@ -33,11 +35,15 @@ export const Hero = () => {
           <p className="text-[10px] uppercase tracking-[0.6em] text-zinc-400 font-bold mb-8 italic animate-in fade-in slide-in-from-left-4 duration-700">
             {heroData.established}
           </p>
-          {/* 🎯 H1 is critical for SEO: ensures Google knows this is the main topic */}
-          <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          
+          {/* 🎯 Hero Title updated to --text-primary (Rich Black) */}
+          <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-[var(--text-primary)] font-bold tracking-tighter uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
             {heroData.title.replace(/\\n/g, '\n')}
           </h1>
-          <div className="h-[2px] w-24 bg-[#B89B5E] mb-12" aria-hidden="true"></div>
+
+          {/* 🎯 Decorative Accent Line updated to --accent-gold (RISA Green) */}
+          <div className="h-[2px] w-24 bg-[var(--accent-gold)] mb-12" aria-hidden="true"></div>
+          
           <p className="max-w-xs text-zinc-500 text-[11px] font-black leading-relaxed mb-12 uppercase tracking-[0.3em] opacity-80 italic">
             {heroData.description}
           </p>
@@ -48,17 +54,17 @@ export const Hero = () => {
             <img 
               src={heroData.hero_image} 
               className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105 grayscale-[0.2] group-hover:grayscale-0" 
-              // 🎯 Added dynamic alt text for Image SEO ranking
               alt={`${heroData.title} - Architectural Vision by RISA`} 
-              loading="eager" // 🎯 Eager load for Largest Contentful Paint (LCP) optimization
-              fetchPriority="high" // 🎯 Priority hint for faster initial rendering
+              loading="eager" 
+              fetchPriority="high" 
             />
             <div className="absolute inset-0 bg-black/5 pointer-events-none" />
           </div>
 
           {/* Floating Detail Card */}
           <aside className="absolute -bottom-10 -left-10 bg-white p-12 hidden xl:block border border-zinc-100 z-30 shadow-2xl animate-in zoom-in-95 duration-1000 delay-300">
-             <p className="text-[9px] uppercase tracking-[0.5em] text-[#B89B5E] mb-4 font-black italic">
+             {/* 🎯 Floating label updated to --accent-gold (RISA Green) */}
+             <p className="text-[9px] uppercase tracking-[0.5em] text-[var(--accent-light)] mb-4 font-black italic">
                {heroData.accent_label}
              </p>
              <h3 className="text-2xl font-serif italic text-zinc-800 tracking-tight leading-none">

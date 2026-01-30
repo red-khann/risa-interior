@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://www.risainterior.in'; // 🎯 Replace with your actual domain
+  const baseUrl = 'https://www.risainterior.in';
 
   return {
     rules: [
@@ -9,13 +9,15 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/admin',       // 🎯 Hide the admin dashboard from Google
-          '/api',         // 🎯 Hide backend API routes
-          '/_next',       // 🎯 Hide Next.js internal system files
-          '/private',     // 🎯 Hide any private folders
+          '/admin',       // 🛡️ Hide main dashboard
+          '/admin/logs',  // 🛡️ Explicitly hide protocol archive
+          '/admin/settings',
+          '/api/',        // 🛡️ Hide backend logic
+          '/_next/',      // 🛡️ Hide build files
+          '/private/',    
         ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`, // 🎯 Connects your sitemap to the robots file
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

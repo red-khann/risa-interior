@@ -21,8 +21,9 @@ export default function EditBlogPage() {
   }, [id]);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-[#F7F5F2]">
-      <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
+    <div className="flex items-center justify-center h-screen bg-[var(--bg-warm)]">
+      {/* 🎯 Updated: Brand Loader color */}
+      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
     </div>
   );
 

@@ -13,12 +13,11 @@ export default function AccountSettings() {
   const [profile, setProfile] = useState({ full_name: '', avatar_url: '' })
   const [status, setStatus] = useState<{type: 'success' | 'error', msg: string} | null>(null)
 
-  // 1. 📡 INITIAL LOAD: Fetch existing identity
   useEffect(() => {
     async function getProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
@@ -34,9 +33,8 @@ export default function AccountSettings() {
       setLoading(false)
     }
     getProfile()
-  }, [])
+  }, [supabase])
 
-  // 2. 🖼️ MEDIA HANDLER: Cloudinary Sync
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -64,7 +62,6 @@ export default function AccountSettings() {
     }
   }
 
-  // 3. 💾 IDENTITY HANDLER: The "Force-Save" Logic
   const updateProfile = async () => {
     setUpdating(true)
     setStatus(null)
@@ -73,19 +70,17 @@ export default function AccountSettings() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("No active session found.")
 
-      // 🛡️ STEP 1: Attempt Upsert (Update or Insert)
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id, // THE CRITICAL KEY
+          id: user.id,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString()
         }, { 
-          onConflict: 'id' // Explicitly handle the ID conflict
+          onConflict: 'id' 
         })
 
-      // 🛡️ STEP 2: Fallback to manual Update if Upsert is blocked by RLS
       if (upsertError) {
         const { error: updateError } = await supabase
           .from('profiles')
@@ -100,12 +95,9 @@ export default function AccountSettings() {
       }
 
       setStatus({ type: 'success', msg: 'Identity Deployed Successfully' })
-      
-      // Refresh the page data to ensure sidebar/header update
-      window.location.reload() 
+      setTimeout(() => window.location.reload(), 1000)
       
     } catch (err: any) {
-      console.error("Sync Error:", err)
       setStatus({ 
         type: 'error', 
         msg: 'Sync Error: ' + (err.message || 'Check Database Policies') 
@@ -117,16 +109,16 @@ export default function AccountSettings() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-       <Loader2 className="animate-spin text-[#B89B5E]" size={32} />
-       <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold">Synchronizing Identity</span>
+       <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
+       <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold italic">Synchronizing Identity...</span>
     </div>
   )
 
   return (
-    <div className="max-w-xl mx-auto p-12 bg-white mt-10 border border-zinc-100 shadow-sm animate-in fade-in duration-500">
+    <div className="max-w-xl mx-auto p-12 bg-white mt-10 border border-zinc-100 shadow-sm animate-in fade-in duration-700">
       <header className="mb-12 border-b border-zinc-100 pb-8">
-        <h1 className="text-[10px] uppercase tracking-[0.5em] text-[#B89B5E] font-bold mb-2">Protocol 01</h1>
-        <p className="text-2xl font-bold tracking-tighter text-zinc-900">Admin Identity</p>
+        <h1 className="text-[10px] uppercase tracking-[0.5em] text-[var(--accent-gold)] font-bold mb-2">Protocol 01</h1>
+        <p className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] uppercase">Admin Identity</p>
       </header>
 
       <div className="space-y-10">
@@ -140,14 +132,14 @@ export default function AccountSettings() {
                 <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-zinc-200"/></div>
               )}
             </div>
-            <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full backdrop-blur-[2px]">
+            <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer rounded-full backdrop-blur-[2px]">
               <Camera size={20} className="text-white" />
               <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
             </label>
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-900 mb-1">Architectural Avatar</p>
-            <p className="text-[10px] text-zinc-400 font-medium leading-relaxed">Personalize your signature across the <br/> studio management logs.</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-primary)] mb-1">Architectural Avatar</p>
+            <p className="text-[10px] text-zinc-400 font-medium leading-relaxed italic">Personalize your signature across the studio management logs.</p>
           </div>
         </div>
 
@@ -158,7 +150,7 @@ export default function AccountSettings() {
             type="text" 
             value={profile.full_name}
             onChange={(e) => setProfile({...profile, full_name: e.target.value})}
-            className="w-full border-b border-zinc-100 py-4 outline-none focus:border-[#B89B5E] text-base font-bold text-zinc-900 transition-all placeholder:text-zinc-200"
+            className="w-full border-b border-zinc-100 py-4 outline-none focus:border-[var(--accent-gold)] text-base font-bold text-[var(--text-primary)] transition-all placeholder:text-zinc-200 uppercase tracking-tight"
             placeholder="e.g., Mohd Rizwan"
           />
         </div>
@@ -167,7 +159,7 @@ export default function AccountSettings() {
         {status && (
           <div className={`p-4 text-[10px] uppercase font-bold tracking-[0.2em] flex items-center gap-3 animate-in slide-in-from-bottom-2 ${
             status.type === 'success' 
-              ? 'bg-green-50 text-green-700 border border-green-100' 
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
               : 'bg-red-50 text-red-700 border border-red-100'
           }`}>
             {status.type === 'success' ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
@@ -179,10 +171,19 @@ export default function AccountSettings() {
         <button 
           onClick={updateProfile}
           disabled={updating}
-          className="w-full py-5 bg-[#1C1C1C] text-white text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[#B89B5E] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-50"
+          className="w-full py-5 bg-[var(--text-primary)] text-white text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-50"
         >
-          {updating ? <RefreshCcw size={14} className="animate-spin" /> : <Save size={14} />}
-          {updating ? "Deploying..." : "Update Identity"}
+          {updating ? (
+            <>
+              <RefreshCcw size={14} className="animate-spin text-[var(--accent-light)]" />
+              <span className="text-[var(--accent-light)]">Deploying Vision...</span>
+            </>
+          ) : (
+            <>
+              <Save size={14} />
+              <span>Synchronize Identity</span>
+            </>
+          )}
         </button>
       </div>
     </div>
