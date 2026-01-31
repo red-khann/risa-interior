@@ -5,27 +5,24 @@ import ClientLayoutWrapper from "./ClientLayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// ✅ AUTOMATIC DOMAIN DETECTION
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
   ? `https://${process.env.NEXT_PUBLIC_SITE_URL}` 
   : process.env.VERCEL_URL 
     ? `https://${process.env.VERCEL_URL}` 
-    : "https://www.risainterior.in"; // 🎯 Using your production domain as final fallback
+    : "https://www.risainterior.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
     default: "RISA Interior & Contractors",
-    template: "%s | RISA Interior & Contractors" // Allows dynamic titles for projects/blogs
+    template: "%s | RISA Interior & Contractors"
   },
   description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
   
-  // 🎯 NEW: Google Search Console Verification
   verification: {
-    google: "YOUR_UNIQUE_GOOGLE_VERIFICATION_CODE_HERE", // 🛡️ Replace with code from Google
+    google: "YOUR_UNIQUE_GOOGLE_VERIFICATION_CODE_HERE", 
   },
 
-  // 🎯 NEW: Advanced Robots Instruction
   robots: {
     index: true,
     follow: true,
@@ -38,10 +35,17 @@ export const metadata: Metadata = {
     },
   },
 
+  // 🎯 Updated Icons Configuration for Mobile & SEO
   icons: {
-    icon: "/favicon.png", 
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.png?v=2", type: "image/png" }, // 🛡️ Cache buster forces immediate update
+    ],
     shortcut: "/favicon.png",
-    apple: "/favicon.png", 
+    apple: [
+      // 📱 Essential for high-resolution mobile displays
+      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
