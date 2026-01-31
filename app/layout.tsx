@@ -39,7 +39,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },
-      { url: "/favicon.png?v=2", type: "image/png" }, // 🛡️ Cache buster forces immediate update
+      // 🎯 Google/Bing requirement: multiple of 48px
+      { url: "/favicon.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.png", sizes: "144x144", type: "image/png" },
     ],
     shortcut: "/favicon.png",
     apple: [
