@@ -5,11 +5,8 @@ import ClientLayoutWrapper from "./ClientLayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
-  ? `https://${process.env.NEXT_PUBLIC_SITE_URL}` 
-  : process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : "https://www.risainterior.in";
+// 🎯 Hardcoded production URL for metadata reliability
+const baseUrl = "https://www.risainterior.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -20,17 +17,17 @@ export const metadata: Metadata = {
   description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
   
   // 🎯 Social Media Protocol: Open Graph
-openGraph: {
+  openGraph: {
     title: "RISA Interior & Contractors",
     description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
-    url: "https://www.risainterior.in",
+    url: baseUrl,
     siteName: "RISA Interior & Contractors",
     locale: "en_US",
     type: "website",
-    // 🎯 PRIORITY FIX: Explicitly define the image array
+    // 🎯 Use absolute URL to force the Gold Banner over the monogram
     images: [
       {
-        url: "/opengraph-image", // Points to your dynamic generator
+        url: `${baseUrl}/opengraph-image`, 
         width: 1200,
         height: 630,
         alt: "RISA Interior & Contractors | Luxury Architectural Excellence",
@@ -38,11 +35,12 @@ openGraph: {
     ],
   },
 
+  // 🎯 Professional Branding for X (Twitter)
   twitter: {
     card: "summary_large_image",
     title: "RISA Interior & Contractors",
     description: "Bespoke Architecture & Interior Management.",
-    images: ["/opengraph-image"], // 🎯 Explicitly for X/Twitter
+    images: [`${baseUrl}/opengraph-image`], 
   },
 
   verification: {
@@ -81,7 +79,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-return (
+  return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-[var(--bg-warm)] antialiased`}>
         <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
