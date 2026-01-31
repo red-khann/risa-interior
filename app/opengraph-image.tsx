@@ -19,7 +19,7 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '20px solid #D9C5A0', // Champagne Gold Border
+          border: '20px solid #134E15', // Champagne Gold Border
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

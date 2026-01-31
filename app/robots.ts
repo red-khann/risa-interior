@@ -6,14 +6,19 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
+        // 🎯 Priority for Visual Branding (Favicon & OG Image)
+        userAgent: ['Googlebot-Image', 'GoogleFavicon'],
+        allow: ['/favicon.png', '/opengraph-image'],
+      },
+      {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/admin',       // 🛡️ Hide main dashboard
-          '/admin/logs',  // 🛡️ Explicitly hide protocol archive
+          '/admin',      
+          '/admin/logs',  
           '/admin/settings',
-          '/api/',        // 🛡️ Hide backend logic
-          '/_next/',      // 🛡️ Hide build files
+          '/api/',        
+          '/_next/',      
           '/private/',    
         ],
       },
