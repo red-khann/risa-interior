@@ -19,6 +19,24 @@ export const metadata: Metadata = {
   },
   description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
   
+  // 🎯 Social Media Protocol: Open Graph
+  openGraph: {
+    title: "RISA Interior & Contractors",
+    description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
+    url: "https://www.risainterior.in",
+    siteName: "RISA Interior & Contractors",
+    locale: "en_US",
+    type: "website",
+    // 💡 This automatically uses the /opengraph-image file we created
+  },
+
+  // 🎯 Professional Branding for X (Twitter)
+  twitter: {
+    card: "summary_large_image",
+    title: "RISA Interior & Contractors",
+    description: "Bespoke Architecture & Interior Management.",
+  },
+
   verification: {
     google: "YOUR_UNIQUE_GOOGLE_VERIFICATION_CODE_HERE", 
   },
@@ -35,18 +53,15 @@ export const metadata: Metadata = {
     },
   },
 
-  // 🎯 Updated Icons Configuration for Mobile & SEO
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },
-      // 🎯 Google/Bing requirement: multiple of 48px
       { url: "/favicon.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon.png", sizes: "96x96", type: "image/png" },
       { url: "/favicon.png", sizes: "144x144", type: "image/png" },
     ],
     shortcut: "/favicon.png",
     apple: [
-      // 📱 Essential for high-resolution mobile displays
       { url: "/favicon.png", sizes: "180x180", type: "image/png" },
     ],
   },
