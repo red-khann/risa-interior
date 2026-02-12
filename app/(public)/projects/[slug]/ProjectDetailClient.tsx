@@ -2,8 +2,17 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, MapPin, Zap, FileText, Clock, X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  ArrowLeft, MapPin, Zap, FileText, Clock, X, 
+  Maximize2, ChevronLeft, ChevronRight, MessageSquare 
+} from "lucide-react";
 import { useContent } from '@/components/PreviewProvider';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+
+// 🎯 Component imports
+import ReviewForm from '@/components/reviews/ReviewForm';
+import ReviewStats from '@/components/reviews/ReviewStats';
 
 export default function ProjectDetailClient({ slug }: { slug: string }) {
   const router = useRouter();
@@ -11,15 +20,50 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
   const liveContent = useContent();
   
   const [project, setProject] = useState<any>(null);
+  const [allApprovedReviews, setAllApprovedReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 🎯 Slider State
   const [sliderPos, setSliderPos] = useState(50);
   const sliderRef = useRef<HTMLDivElement>(null);
-
-  // 🎯 Lightbox State
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [allImages, setAllImages] = useState<string[]>([]);
+
+  // 🎯 MICRO-PRECISION STAR LOGIC: Dynamic fills based on exact decimal
+  const StarIcon = ({ fillPercentage }: { fillPercentage: number }) => {
+    const gradientId = `grad-project-detail-${Math.random().toString(36).substr(2, 9)}`;
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id={gradientId}>
+            <stop offset={`${fillPercentage}%`} stopColor="var(--accent-light)" />
+            <stop offset={`${fillPercentage}%`} stopColor="#e5e7eb" />
+          </linearGradient>
+        </defs>
+        <path 
+          d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" 
+          fill={`url(#${gradientId})`}
+        />
+      </svg>
+    );
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex gap-0.5">
+          {[1, 2, 3, 4, 5].map((index) => {
+            let fill = 0;
+            if (rating >= index) fill = 100;
+            else if (rating > index - 1) fill = (rating - (index - 1)) * 100;
+            return <StarIcon key={index} fillPercentage={fill} />;
+          })}
+        </div>
+        <span className="text-[10px] font-black text-[var(--accent-light)] tracking-widest">
+          {rating.toFixed(1)}
+        </span>
+      </div>
+    );
+  };
 
   const getUI = (key: string, fallback: string) => {
     return liveContent[`project_detail_global:${key}`] || fallback;
@@ -29,9 +73,8 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
     spec_header: getUI('spec_header', "Core Specifications"),
     narrative_header: getUI('narrative_header', "Philosophical Approach"),
     gallery_header: getUI('gallery_header', "The Narrative in Frames"),
-    gallery_subtitle: getUI('gallery_subtitle', "Visual Protocol"),
+    review_header: getUI('review_header', "Featured Perspectives"),
     comparison_header: getUI('comparison_header', "Evolutionary Shift"),
-    cta_subtitle: getUI('cta_subtitle', "Collaborative Inquiry"),
     cta_title: getUI('cta_title', "Discuss your vision?"),
     cta_button: getUI('cta_button', "Initiate Conversation")
   };
@@ -39,25 +82,25 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
   useEffect(() => {
     async function fetchProjectData() {
       setLoading(true);
-      const { data } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('slug', slug)
-        .single();
+      try {
+        const { data: projData } = await supabase.from('projects').select('*').eq('slug', slug).single();
+        const { data: revData } = await supabase.from('reviews').select('*').eq('page_slug', slug).eq('status', 'approved').order('created_at', { ascending: false });
 
-      if (data) {
-        const parsedGallery = typeof data.gallery === 'string' ? JSON.parse(data.gallery) : data.gallery || [];
-        setProject({ ...data, gallery: parsedGallery });
-        
-        const images = [
-            data.image_url, 
-            ...(data.transformation_before ? [data.transformation_before] : []), 
-            ...(data.transformation_after ? [data.transformation_after] : []), 
-            ...parsedGallery
-        ].filter(Boolean);
-        setAllImages(images);
-      }
-      setLoading(false);
+        if (projData) {
+          const parsedGallery = typeof projData.gallery === 'string' ? JSON.parse(projData.gallery) : projData.gallery || [];
+          setProject({ ...projData, gallery: parsedGallery });
+          
+          const images = [
+              projData.image_url, 
+              ...(projData.transformation_before ? [projData.transformation_before] : []), 
+              ...(projData.transformation_after ? [projData.transformation_after] : []), 
+              ...parsedGallery
+          ].filter(Boolean);
+          setAllImages(images);
+        }
+        if (revData) setAllApprovedReviews(revData);
+      } catch (err) { console.error("Fetch error:", err); }
+      finally { setLoading(false); }
     }
     if (slug) fetchProjectData();
   }, [slug, supabase]);
@@ -80,6 +123,8 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
     setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : allImages.length - 1));
   }, [allImages]);
 
+  const featuredReviews = allApprovedReviews.filter(r => r.is_featured === true);
+
   if (loading) return (
     <div className="min-h-screen bg-[var(--bg-warm)] flex items-center justify-center animate-pulse text-[10px] tracking-[0.4em] text-zinc-400 uppercase font-black">
       Synchronizing Project Protocol...
@@ -89,14 +134,11 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
   if (!project) return <div className="min-h-screen flex items-center justify-center bg-[var(--bg-warm)] uppercase tracking-widest text-[10px] font-black text-zinc-400">Archive Entry Not Found</div>;
 
   return (
-    <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/20">
+    <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/20 overflow-x-hidden">
       
       {/* 🖼️ High-Res Lightbox */}
       {lightboxIndex !== null && (
-        <div 
-          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center animate-in fade-in duration-300 cursor-zoom-out"
-          onClick={() => setLightboxIndex(null)}
-        >
+        <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center animate-in fade-in duration-300 cursor-zoom-out" onClick={() => setLightboxIndex(null)}>
           <button className="absolute top-8 right-8 text-white/50 hover:text-white z-[210] transition-colors"><X size={40} strokeWidth={1} /></button>
           <button onClick={prevImage} className="absolute left-8 text-white/30 hover:text-white transition-colors p-4"><ChevronLeft size={48} strokeWidth={1} /></button>
           <img src={allImages[lightboxIndex]} className="max-w-[90vw] max-h-[85vh] object-contain shadow-2xl" alt="Full size" onClick={(e) => e.stopPropagation()} />
@@ -116,7 +158,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
             <span className="w-1 h-1 rounded-full bg-zinc-300"></span>
             <span>{project.phase}</span>
           </div>
-          <h1 className="text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line">
+          <h1 className="text-[10vw] lg:text-[7vw] leading-[0.85] mb-12 text-zinc-900 font-bold tracking-tighter uppercase whitespace-pre-line">
             {project.title}
           </h1>
           <div className="flex flex-wrap items-center gap-10">
@@ -131,7 +173,6 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </div>
         </header>
 
-        {/* Hero Figure */}
         <figure className="aspect-[21/9] overflow-hidden bg-zinc-200 mb-40 shadow-2xl relative cursor-zoom-in group" onClick={() => setLightboxIndex(0)}>
           <img src={project.image_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -139,7 +180,6 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </div>
         </figure>
 
-        {/* 🏛️ 1. Description & Narrative Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-24 mb-32 pt-24 border-t border-zinc-200">
           <aside className="lg:col-span-4 space-y-20">
             <section className="space-y-10">
@@ -169,30 +209,19 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </section>
         </div>
 
-        {/* 🎯 2. SLIDE-TO-REVEAL TRANSITION (Now before Gallery) */}
+        {/* 🎯 Transformation Section */}
         {project.show_transformation && project.transformation_before && project.transformation_after && (
           <section className="mb-40 space-y-12 pt-24 border-t border-zinc-200">
             <h4 className="text-[11px] uppercase tracking-[0.8em] text-[var(--accent-gold)] font-black italic text-center underline decoration-zinc-200 underline-offset-8">
               {ui.comparison_header}
             </h4>
-            <div 
-              ref={sliderRef}
-              className="relative w-full aspect-[21/9] overflow-hidden cursor-ew-resize shadow-2xl select-none"
-              onMouseMove={handleMove}
-              onTouchMove={handleMove}
-            >
+            <div ref={sliderRef} className="relative w-full aspect-[21/9] overflow-hidden cursor-ew-resize shadow-2xl select-none" onMouseMove={handleMove} onTouchMove={handleMove}>
               <img src={project.transformation_after} alt="After" className="absolute inset-0 w-full h-full object-cover" />
-              <div 
-                className="absolute inset-0 w-full h-full overflow-hidden"
-                style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
-              >
+              <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
                 <img src={project.transformation_before} alt="Before" className="absolute inset-0 w-full h-full object-cover grayscale" />
                 <span className="absolute bottom-6 left-6 bg-black/60 text-white text-[8px] tracking-[0.3em] px-4 py-2 uppercase font-bold">Pre-Protocol</span>
               </div>
-              <div 
-                className="absolute inset-y-0 w-1 bg-white shadow-xl z-10"
-                style={{ left: `${sliderPos}%` }}
-              >
+              <div className="absolute inset-y-0 w-1 bg-white shadow-xl z-10" style={{ left: `${sliderPos}%` }}>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-2xl">
                    <ChevronLeft size={16} className="text-zinc-400" />
                    <ChevronRight size={16} className="text-zinc-400" />
@@ -203,7 +232,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </section>
         )}
 
-        {/* 🏛️ 3. Gallery Section */}
+        {/* 🏛️ Gallery Section */}
         {project.gallery && project.gallery.length > 0 && (
           <section className="pt-32 border-t border-zinc-200 mb-40">
             <header className="flex flex-col items-center text-center mb-24 space-y-6">
@@ -220,6 +249,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </section>
         )}
 
+        {/* 🏛️ CTA Section */}
         <footer className="mt-48 pt-40 border-t border-zinc-200 text-center">
             <div className="max-w-3xl mx-auto space-y-12">
               <h2 className="text-5xl md:text-8xl font-bold tracking-tighter text-zinc-900 uppercase leading-[0.85]">{ui.cta_title}</h2>
@@ -228,6 +258,44 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
               </button>
             </div>
         </footer>
+
+        {/* 🏛️ REVIEWS SECTION */}
+        <section className="pt-32 border-t border-zinc-200 mb-20">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-6">
+              <h2 className="text-[10px] uppercase tracking-[0.6em] font-bold text-zinc-900">{ui.review_header}</h2>
+              <Link href={`/reviews?type=project&slug=${slug}`}>
+                <button className="group flex items-center gap-2 text-[9px] uppercase tracking-widest font-black text-zinc-400 hover:text-[var(--accent-gold)] transition-colors">
+                  See All {allApprovedReviews.length} Reviews <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+          </div>
+          
+          <ReviewStats reviews={allApprovedReviews} />
+
+          <div className="space-y-16 mb-24 max-w-4xl">
+            {featuredReviews.length > 0 ? (
+              featuredReviews.map((rev) => (
+                <div key={rev.id} className="relative pl-10 animate-in fade-in duration-700">
+                  <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-[#B89B5E] to-transparent" />
+                  {/* 🎯 Micro-precision stars applied here */}
+                  <div className="mb-4">{renderStars(rev.rating)}</div>
+                  <p className="text-lg text-zinc-600 italic font-serif leading-relaxed mb-4">"{rev.review_text}"</p>
+                  <div className="flex items-center gap-3">
+                       <div className="h-[1px] w-6 bg-zinc-200" />
+                       <p className="text-[9px] uppercase tracking-widest font-black text-zinc-900">— {rev.name}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-[10px] uppercase tracking-widest text-zinc-300 italic">No featured narratives documented for this project.</p>
+            )}
+          </div>
+
+          <div className="pt-10 border-t border-zinc-100">
+            <ReviewForm pageType="project" pageSlug={slug} />
+          </div>
+        </section>
+
       </article>
     </main>
   );

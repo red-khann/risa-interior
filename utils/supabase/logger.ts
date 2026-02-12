@@ -1,10 +1,11 @@
 import { createClient } from './client'
 
 export const logActivity = async (
-  // 🎯 Included 'TIMEOUT' and maintained your action sequence
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'TOGGLE' | 'LOGIN' | 'LOGOUT' | 'TIMEOUT', 
+  // 🎯 Added 'APPROVE' and 'REJECT' for specific Review actions
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'TOGGLE' | 'LOGIN' | 'LOGOUT' | 'TIMEOUT' | 'APPROVE' | 'REJECT', 
   itemName: string,
-  category: 'PROJECT' | 'SERVICE' | 'JOURNAL' | 'CONTENT' | 'AUTH'
+  // 🎯 Added 'REVIEW' category
+  category: 'PROJECT' | 'SERVICE' | 'JOURNAL' | 'CONTENT' | 'AUTH' | 'REVIEW'
 ) => {
   const supabase = createClient()
   
@@ -15,14 +16,13 @@ export const logActivity = async (
     return;
   }
 
-  // 🎯 Mapped strictly to all 7 columns including the new 'module' column
   const { error: dbError } = await supabase.from('admin_logs').insert({
     action_type: action,
-    // 🎯 Maintains your bracketed prefix format
+    // 🎯 Maintains your format: e.g., "[REVIEW] Approved: John Doe"
     item_name: `[${category}] ${itemName}`, 
     admin_id: user.id,        
     admin_email: user.email,
-    module: category, // 🎯 Fills the module column with the category (PROJECT, AUTH, etc.)
+    module: category, 
     created_at: new Date().toISOString()
   })
 

@@ -1,252 +1,253 @@
-'use client'
-import { useState, useEffect, useMemo } from 'react';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { 
-  Activity, Search, User, Filter, 
-  Calendar, ShieldCheck, Database, Loader2, ArrowUpDown, Box
+  Activity, Search, User, Filter, Database, Loader2, 
+  ArrowUpDown, ChevronLeft, ChevronRight, Inbox, Clock
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { toast, Toaster } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// 🎯 Range set to 15 as per studio standards
+const ITEMS_PER_PAGE = 15;
 
 const ACTION_TYPES = ["All Actions", "CREATE", "UPDATE", "DELETE", "TOGGLE", "LOGIN"];
-const MODULE_TYPES = ["All Modules", "AUTH", "PROJECT", "SERVICE", "JOURNAL", "CONTENT"];
+const MODULE_TYPES = ["All Modules", "AUTH", "PROJECT", "SERVICE", "JOURNAL", "CONTENT", "REVIEW"];
 
 export default function AdminLogsPage() {
   const supabase = createClient();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filtering & Sorting State
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAction, setActiveAction] = useState('All Actions');
   const [activeModule, setActiveModule] = useState('All Modules');
-  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+  const [sortBy, setSortBy] = useState('newest');
 
-  async function fetchAllLogs() {
+  useEffect(() => {
+    fetchLogs();
+  }, [currentPage, activeAction, activeModule, searchTerm, sortBy]);
+
+  async function fetchLogs() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('admin_logs')
-      .select(`
-        *,
-        profiles:admin_id (
-          full_name,
-          avatar_url
-        )
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('admin_logs')
+        .select(`
+          *,
+          profiles:admin_id (
+            full_name,
+            avatar_url
+          )
+        `, { count: 'exact' });
 
-    if (!error) setLogs(data || []);
-    setLoading(false);
+      // 🎯 Search Logic: Architect Name or Item Identity
+      if (searchTerm.trim() !== '') {
+        // Note: For complex joins, ilike on joined tables is handled via filters or computed columns
+        // Here we filter primary text fields
+        query = query.ilike('item_name', `%${searchTerm}%`);
+      }
+
+      // Action Type Filter
+      if (activeAction !== 'All Actions') {
+        query = query.eq('action_type', activeAction);
+      }
+
+      // Module Filter
+      if (activeModule !== 'All Modules') {
+        query = query.eq('module', activeModule);
+      }
+
+      // 🎯 Dynamic Sorting
+      if (sortBy === 'newest') {
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      }
+
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, count, error } = await query.range(from, to);
+
+      if (error) throw error;
+      if (data) setLogs(data);
+      if (count !== null) setTotalCount(count);
+    } catch (err) {
+      toast.error("Fetch Error", { description: "Failed to synchronize with protocol archive." });
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { fetchAllLogs(); }, []);
-
-  const handleSort = (key: string) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
-    }));
-  };
-
-  const filteredLogs = useMemo(() => {
-    return logs
-      .filter(log => {
-        const matchesSearch = 
-          (log.item_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (log.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesAction = activeAction === 'All Actions' || log.action_type === activeAction;
-        const matchesModule = activeModule === 'All Modules' || log.module === activeModule;
-        return matchesSearch && matchesAction && matchesModule;
-      })
-      .sort((a, b) => {
-        const factor = sortConfig.direction === 'desc' ? -1 : 1;
-        if (sortConfig.key === 'created_at') {
-          return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * factor;
-        }
-        // Handle sorting for profiles object vs top-level keys
-        const valA = sortConfig.key === 'profiles' ? (a.profiles?.full_name || "") : (a[sortConfig.key] || "");
-        const valB = sortConfig.key === 'profiles' ? (b.profiles?.full_name || "") : (b[sortConfig.key] || "");
-        return valA.toString().localeCompare(valB.toString()) * factor;
-      });
-  }, [logs, searchTerm, activeAction, activeModule, sortConfig]);
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
-      <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold italic">Accessing Protocol Archive...</span>
-    </div>
-  );
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700 relative pb-20">
+    <main className="min-h-screen bg-[#F7F5F2] pt-24 md:pt-32 pb-20 px-4 md:px-10 selection:bg-[var(--accent-gold)]/20">
+      <Toaster position="top-right" richColors />
       
-      {/* 🏛️ HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
-        <div>
-          <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Audit Trails</span>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Protocol Archive</h2>
-        </div>
-        <div className="flex gap-6 md:gap-10 border-l border-zinc-200 pl-6 md:pl-10">
-          <div className="flex flex-col text-center md:text-left">
-            <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold mb-1">Narrative Count</span>
-            <span className="text-lg md:text-xl font-bold text-[var(--text-primary)] tabular-nums">{logs.length}</span>
-          </div>
-          <div className="hidden sm:flex flex-col">
-            <span className="text-[8px] uppercase tracking-widest text-[var(--accent-gold)] font-bold mb-1">Live Sync</span>
-            <span className="text-sm font-bold text-zinc-500 uppercase">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 🔍 COMMAND BAR */}
-      <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30">
-        <div className="relative w-full md:w-80 lg:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-          <input 
-            type="text" 
-            placeholder="SEARCH ARCHITECT OR ITEM..." 
-            className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[var(--accent-gold)] uppercase text-zinc-800" 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-          />
-        </div>
-        <div className="flex gap-3 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
-          <select 
-            className="flex-1 md:w-40 bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[var(--accent-gold)]"
-            value={activeAction}
-            onChange={(e) => setActiveAction(e.target.value)}
-          >
-            {ACTION_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-          <select 
-            className="flex-1 md:w-40 bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500"
-            value={activeModule}
-            onChange={(e) => setActiveModule(e.target.value)}
-          >
-            {MODULE_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* 📱 MOBILE VIEW: Protocol Cards */}
-      <div className="md:hidden space-y-4 px-4">
-        {filteredLogs.map((log, index) => (
-          <div key={log.id} className="bg-white border border-zinc-100 p-5 rounded-2xl shadow-sm space-y-4">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-zinc-50 border border-zinc-200 overflow-hidden shadow-inner flex items-center justify-center">
-                  {log.profiles?.avatar_url ? (
-                    <img src={log.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
-                  ) : <User size={14} className="text-zinc-300" />}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-[var(--text-primary)] uppercase truncate leading-none">
-                    {log.profiles?.full_name || log.admin_email || 'System'}
-                  </p>
-                  <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-1">#{(logs.length - index).toString().padStart(3, '0')}</p>
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-12 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <span className="text-[10px] uppercase tracking-[0.6em] font-bold text-[var(--accent-gold)] mb-4 block italic">Audit Trails</span>
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-zinc-900 uppercase leading-none">
+                Protocol <span className="font-serif italic font-light text-zinc-400">Archive</span>
+              </h2>
+            </motion.div>
+            <div className="flex gap-10 bg-white px-8 py-4 border border-zinc-100 shadow-sm">
+              <div className="text-right">
+                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1">Narrative Count</p>
+                <p className="text-2xl font-bold text-zinc-900 tabular-nums">{totalCount}</p>
+              </div>
+              <div className="hidden sm:block text-right border-l border-zinc-100 pl-10">
+                <p className="text-[8px] font-black text-[var(--accent-gold)] uppercase tracking-[0.3em] mb-1">Live Sync</p>
+                <div className="flex items-center gap-2 justify-end">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-sm font-bold text-zinc-500 uppercase">Active</p>
                 </div>
               </div>
-              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${
-                log.action_type === 'DELETE' ? 'bg-red-50 text-red-600' : 
-                log.action_type === 'CREATE' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-50 text-[var(--text-primary)]'
-              }`}>
-                {log.action_type}
-              </span>
-            </div>
-            
-            <div className="bg-zinc-50/50 p-3 rounded-lg border border-zinc-50 italic text-[10px] text-zinc-600">
-               "{log.item_name || 'Narrative Change'}"
-            </div>
-
-            <div className="flex justify-between items-center pt-2 border-t border-zinc-50">
-               <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-zinc-100 text-zinc-500 rounded-sm">
-                 {log.module}
-               </span>
-               <span className="text-[9px] text-[var(--accent-gold)] font-bold uppercase tracking-tighter">
-                 {new Date(log.created_at).toLocaleDateString()} — {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-               </span>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* 💻 DESKTOP VIEW: Audit Table */}
-      <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-[var(--text-primary)] text-white">
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('profiles')}>
-                Architect <ArrowUpDown size={10} className="inline ml-1" />
-              </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('action_type')}>
-                Protocol <ArrowUpDown size={10} className="inline ml-1" />
-              </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold">Item Identity</th>
-              {/* 🎯 NEW: Sortable Module Column */}
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('module')}>
-                Module <ArrowUpDown size={10} className="inline ml-1" />
-              </th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('created_at')}>
-                Timestamp <ArrowUpDown size={10} className="inline ml-1" />
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-zinc-50 transition-colors group">
-                <td className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 shadow-sm">
-                      {log.profiles?.avatar_url ? (
-                        <img src={log.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
-                      ) : <div className="w-full h-full flex items-center justify-center text-zinc-300"><User size={16} /></div>}
+          {/* 🎯 COMMAND BAR */}
+          <div className="flex flex-wrap gap-4 pt-8 border-t border-zinc-200">
+            <div className="flex flex-1 min-w-[280px] items-center gap-3 bg-white px-4 py-2 border border-zinc-100 focus-within:border-[var(--accent-gold)] transition-colors">
+              <Search size={14} className="text-[var(--accent-gold)]" />
+              <input 
+                type="text"
+                placeholder="Search Item Identity..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="w-full text-[10px] uppercase font-bold tracking-widest outline-none bg-transparent placeholder:text-zinc-300"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <Filter size={14} className="text-[var(--accent-gold)]" />
+              <select 
+                value={activeAction} 
+                onChange={(e) => { setActiveAction(e.target.value); setCurrentPage(1); }}
+                className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent"
+              >
+                {ACTION_TYPES.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <Activity size={14} className="text-[var(--accent-gold)]" />
+              <select 
+                value={activeModule} 
+                onChange={(e) => { setActiveModule(e.target.value); setCurrentPage(1); }}
+                className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent"
+              >
+                {MODULE_TYPES.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <Clock size={14} className="text-[var(--accent-gold)]" />
+              <select 
+                value={sortBy} 
+                onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+                className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
+          </div>
+        </header>
+
+        {loading ? (
+          <div className="flex flex-col items-center py-40 gap-4">
+            <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <AnimatePresence mode="popLayout">
+              {logs.length > 0 ? (
+                logs.map((log) => (
+                  <motion.div layout key={log.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="bg-white border border-zinc-100 p-6 md:p-8 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between group hover:shadow-xl transition-all duration-500"
+                  >
+                    <div className="flex-1 space-y-4 w-full">
+                      <div className="flex items-center justify-between lg:justify-start gap-6">
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 border ${
+                          log.action_type === 'DELETE' ? 'border-red-100 text-red-600 bg-red-50' : 
+                          log.action_type === 'CREATE' ? 'border-emerald-100 text-emerald-600 bg-emerald-50' : 'border-zinc-100 text-zinc-600 bg-zinc-50'
+                        }`}>
+                          {log.action_type}
+                        </span>
+                        <span className="text-[10px] font-bold text-[var(--accent-gold)] uppercase tracking-[0.2em]">
+                          {new Date(log.created_at).toLocaleDateString()} — {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-zinc-900 overflow-hidden shrink-0 border border-zinc-800 shadow-lg">
+                          {log.profiles?.avatar_url ? (
+                            <img src={log.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                          ) : <div className="w-full h-full flex items-center justify-center text-zinc-700"><User size={16} /></div>}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-zinc-900 text-lg uppercase tracking-tight leading-none">
+                            {log.profiles?.full_name || log.admin_email || 'System Protocol'}
+                          </h3>
+                          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1 italic">
+                            Modified: <span className="text-zinc-600">"{log.item_name || 'System State'}"</span>
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--text-primary)] uppercase truncate">
-                        {log.profiles?.full_name || log.admin_email || 'System'}
-                      </p>
-                      <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1">Studio Admin</p>
+
+                    <div className="flex items-center gap-6 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-zinc-50">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-300 mb-1">Module Access</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-zinc-900 text-white rounded-sm">
+                          {log.module}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                
-                <td className="p-6">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${
-                    log.action_type === 'DELETE' ? 'text-red-500' : 
-                    log.action_type === 'CREATE' ? 'text-emerald-600' : 'text-[var(--text-primary)]'
-                  }`}>
-                    {log.action_type}
-                  </span>
-                </td>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="py-40 text-center border border-dashed border-zinc-200 bg-white/50">
+                  <Database size={40} className="mx-auto mb-4 text-zinc-300" />
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-black">Archive Void: No Protocols Documented</p>
+                </div>
+              )}
+            </AnimatePresence>
 
-                <td className="p-6">
-                  <p className="text-[10px] font-bold text-zinc-600 uppercase italic">"{log.item_name || 'N/A'}"</p>
-                </td>
-
-                <td className="p-6 text-center">
-                  <span className="text-[8px] font-black uppercase tracking-tighter px-3 py-1 bg-zinc-100 text-zinc-500 border border-zinc-200 rounded-sm">
-                    {log.module}
-                  </span>
-                </td>
-
-                <td className="p-6 text-right">
-                  <div className="flex flex-col items-end">
-                    <p className="text-[10px] font-bold text-[var(--text-primary)] uppercase">
-                      {new Date(log.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-[9px] text-[var(--accent-gold)] font-bold">
-                      {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {/* 🎯 THEME PAGINATION */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-8 pt-12">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo(0,0); }}
+                  className="p-4 border border-zinc-100 disabled:opacity-30 hover:bg-white transition-all shadow-sm"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="text-[10px] uppercase tracking-widest font-black text-zinc-400">
+                  Protocol Page {currentPage} <span className="mx-2 text-zinc-200">/</span> {totalPages}
+                </span>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo(0,0); }}
+                  className="p-4 border border-zinc-100 disabled:opacity-30 hover:bg-white transition-all shadow-sm"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {filteredLogs.length === 0 && (
-        <div className="py-32 flex flex-col items-center justify-center border-2 border-dashed border-zinc-100 rounded-lg mx-4 md:mx-0">
-          <Database size={40} className="text-zinc-100 mb-4" />
-          <p className="text-zinc-400 text-[10px] uppercase tracking-[0.4em] font-bold">No entries archived for this criteria.</p>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }

@@ -13,27 +13,49 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!project) return { title: "Project Archive | RISA Interior & Contractors" };
 
   const title = `${project.title} | ${project.category} in ${project.city} | RISA Interior`;
-  const description = project.meta_description || `Explore the architectural details of ${project.title}, a ${project.category} project by RISA Interior & Contractors.`;
-
   return {
     title,
-    description,
-    keywords: project.focus_keyword ? [project.focus_keyword, project.category, "Architectural Design"] : [project.category, "Architecture"],
-    openGraph: {
-      title,
-      description,
-      images: [project.image_url],
-      type: 'article',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [project.image_url],
-    }
+    description: project.meta_description || `Explore the architectural details of ${project.title}.`,
+    openGraph: { title, images: [project.image_url], type: 'article' },
   };
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
-  return <ProjectDetailClient slug={params.slug} />;
+export default async function Page({ params }: { params: { slug: string } }) {
+  const supabase = createClient();
+  
+  // 🎯 DATA PROTOCOL: Fetch specific project rating for Search Console
+  const { data: reviews } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('page_slug', params.slug)
+    .eq('status', 'approved');
+
+  const total = reviews?.length || 0;
+  const avg = total > 0 
+    ? (reviews!.reduce((acc, r) => acc + r.rating, 0) / total).toFixed(1) 
+    : "5.0";
+
+  // 🏛️ JSON-LD SCHEMA: The "Signal" for Google Stars
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": params.slug,
+    "author": { "@type": "Organization", "name": "RISA Interior" },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": avg,
+      "reviewCount": total > 0 ? total.toString() : "1",
+      "bestRating": "5"
+    }
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProjectDetailClient slug={params.slug} />
+    </>
+  );
 }

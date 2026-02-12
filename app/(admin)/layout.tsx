@@ -31,6 +31,7 @@ export default function AdminLayout({
     { name: 'Journal', path: '/admin/blog', icon: Newspaper },
     // 🎯 NEW: Added Logs to mobile drawer
     { name: 'Archive', path: '/admin/logs', icon: History },
+    { name: 'Reviews', path: '/admin/reviews', icon: History },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 

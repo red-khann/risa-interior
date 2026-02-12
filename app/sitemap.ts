@@ -17,19 +17,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ])
 
   // 2. Define Static Routes (Priority hierarchy)
-  const staticRoutes = [
+// Inside your staticRoutes array
+const staticRoutes = [
     '',
     '/projects',
     '/services',
     '/blog',
     '/about',
     '/contact',
-  ].map((route) => ({
+    '/reviews', // 🎯 Add this to ensure the total ratings page is crawled
+].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: route === '' ? 1.0 : 0.8,
-  }))
+}))
 
   // 3. Map Project Portfolio Routes
   const projectRoutes = (projects || []).map((p) => ({

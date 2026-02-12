@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useContent } from '@/components/PreviewProvider'; 
+import { motion } from 'framer-motion';
 
 export default function ContactClient() {
   const supabase = createClient();
@@ -91,23 +92,28 @@ export default function ContactClient() {
   };
 
   return (
-    // 🎯 bg-[#F7F5F2] swapped for var(--bg-warm)
-    <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/20">
+    <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/20 overflow-x-hidden">
       <section className="max-w-7xl mx-auto px-6 lg:px-12" aria-labelledby="contact-heading">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
           
           <div className="space-y-16">
-            <header>
-              <h2 id="contact-heading" className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-6 italic">
+            <motion.header 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-left"
+            >
+              <h2 id="contact-heading" className="text-[10px] uppercase tracking-[0.4em] text-[var(--accent-gold)] font-bold mb-6 italic">
                 {content.subtitle}
               </h2>
-              <h1 className="text-5xl md:text-6xl font-bold tracking-tighter leading-[0.85] mb-12 text-zinc-900 uppercase whitespace-pre-line animate-in fade-in slide-in-from-bottom-8 duration-1000">
+
+              {/* 🎯 ADJUSTED TITLE SIZE: text-[10vw] for mobile, text-[5vw] for desktop */}
+              <h1 className="text-[10vw] sm:text-[8vw] lg:text-[5vw] leading-[0.95] text-zinc-900 font-bold tracking-tighter uppercase break-words mb-12">
                 {content.title.split(/(\[.*?\])/g).map((part, i) => part.startsWith('[') ? 
-                  // 🎯 Title accent color restored to Zinc-300 (Grey) as per user style preference
                   <span key={i} className="font-serif italic text-zinc-300">{part.slice(1, -1)}</span> : part
                 )}
               </h1>
-            </header>
+            </motion.header>
 
             <address className="not-italic space-y-8">
               <div>
@@ -115,7 +121,6 @@ export default function ContactClient() {
                   {content.bizLabel}
                 </h3>
                 <p className="text-xl font-light text-zinc-500">
-                  {/* 🎯 hover color swapped for var(--accent-gold) */}
                   <a href={`mailto:${content.email}`} className="hover:text-[var(--accent-gold)] transition-colors">{content.email}</a>
                 </p>
               </div>
@@ -133,7 +138,6 @@ export default function ContactClient() {
           <section className="bg-white p-10 md:p-16 border border-zinc-100 shadow-sm relative" aria-label="Inquiry Form">
             {submitted && (
               <div role="alert" className="absolute inset-0 bg-white/95 z-10 flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-500">
-                {/* 🎯 "Inquiry Chronicled" label swapped for var(--accent-gold) */}
                 <p className="text-[var(--accent-gold)] text-[10px] uppercase tracking-[0.4em] font-bold mb-4">Inquiry Chronicled</p>
                 <p className="text-zinc-500 font-serif italic text-xl">Thank you. Your vision has been submitted.</p>
                 <button onClick={() => setSubmitted(false)} className="mt-10 text-[9px] uppercase tracking-widest border-b border-zinc-200 pb-1">Send another</button>
@@ -169,7 +173,6 @@ export default function ContactClient() {
 
               {selectedService === "Other" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {/* 🎯 Focus highlight swapped for var(--accent-gold) */}
                   <label htmlFor="custom_service" className="text-[10px] uppercase tracking-widest font-bold text-[var(--accent-gold)]">Specify Your Interest</label>
                   <input id="custom_service" name="custom_service" required type="text" className="w-full bg-transparent border-b border-[var(--accent-gold)] py-3 focus:border-zinc-900 outline-none transition-all font-light" placeholder="e.g. Sustainable Landscape Design" />
                 </div>
@@ -180,7 +183,6 @@ export default function ContactClient() {
                 <textarea id="description" name="description" required rows={4} className="w-full bg-transparent border-b border-zinc-200 py-3 focus:border-zinc-900 outline-none transition-all font-light resize-none" placeholder="Tell us about your project..." />
               </div>
 
-              {/* 🎯 bg-[#1C1C1C] swapped for var(--text-primary) (Rich Black) and hover for var(--accent-gold) */}
               <button type="submit" disabled={loading} className="w-full py-6 bg-[var(--text-primary)] text-white text-[10px] uppercase tracking-[0.5em] font-bold hover:bg-[var(--accent-gold)] transition-all disabled:opacity-50">
                 {loading ? "Transmitting..." : "Send Inquiry"}
               </button>

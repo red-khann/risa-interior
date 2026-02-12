@@ -27,10 +27,12 @@ export default function ProfessionalVisualCMS() {
 
   useEffect(() => { fetchContent() }, []);
 
+  // 🎯 Updated: Included 'reviews' in the Page Key Map
   const pageKeyMap: Record<string, string> = {
     '/': 'home',
     '/about': 'about',
     '/contact': 'contact',
+    '/reviews': 'reviews', // Added reviews key
     '/projects': 'projects_page',
     '/projects/[slug]': 'project_detail_global',
     '/services': 'services_page',
@@ -122,7 +124,6 @@ export default function ProfessionalVisualCMS() {
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[var(--bg-warm)]">
-      {/* 🎯 Updated: Loader color to RISA Green */}
       <Loader2 className="animate-spin text-[var(--accent-gold)]" />
     </div>
   );
@@ -135,14 +136,12 @@ export default function ProfessionalVisualCMS() {
         <div className="p-8 border-b border-zinc-200">
           <div className="flex justify-between items-center mb-10">
             <div>
-              {/* 🎯 Updated: Label color to RISA Green */}
               <h2 className="text-[10px] font-black uppercase tracking-[0.6em] text-[var(--accent-gold)]">Content Engine</h2>
               <p className="text-[9px] text-zinc-400 uppercase mt-1 tracking-widest font-bold">Refining the narrative</p>
             </div>
             <button 
               onClick={handlePublish}
               disabled={JSON.stringify(drafts) === JSON.stringify(originalContent) || isPublishing}
-              // 🎯 Updated: Button colors to Rich Black and RISA Green hover
               className={`px-8 py-3 rounded-full text-[10px] uppercase font-bold tracking-[0.3em] transition-all flex items-center gap-2 shadow-2xl active:scale-95 ${
                 JSON.stringify(drafts) !== JSON.stringify(originalContent) ? 'bg-[var(--text-primary)] text-white hover:bg-[var(--accent-gold)]' : 'bg-zinc-100 text-zinc-400'
               }`}
@@ -153,7 +152,6 @@ export default function ProfessionalVisualCMS() {
           </div>
 
           <div className="flex gap-1 bg-zinc-50 p-1 rounded-sm mb-6 border border-zinc-100">
-            {/* 🎯 Updated: Tab active colors to RISA Green */}
             <button onClick={() => { setEditGroup('page'); setActiveTab('/') }} className={`flex-1 py-3 text-[8px] uppercase font-black tracking-widest rounded-sm transition-all flex items-center justify-center gap-2 ${editGroup === 'page' ? 'bg-white shadow-md text-[var(--accent-gold)]' : 'text-zinc-400'}`}><Layout size={12} /> Page</button>
             <button onClick={() => { setEditGroup('protocol'); setActiveTab('/projects/[slug]') }} className={`flex-1 py-3 text-[8px] uppercase font-black tracking-widest rounded-sm transition-all flex items-center justify-center gap-2 ${editGroup === 'protocol' ? 'bg-white shadow-md text-[var(--accent-gold)]' : 'text-zinc-400'}`}><Layers size={12} /> Detail</button>
             <button onClick={() => setEditGroup('global')} className={`flex-1 py-3 text-[8px] uppercase font-black tracking-widest rounded-sm transition-all flex items-center justify-center gap-2 ${editGroup === 'global' ? 'bg-white shadow-md text-[var(--accent-gold)]' : 'text-zinc-400'}`}><Globe size={12} /> Global</button>
@@ -177,6 +175,7 @@ export default function ProfessionalVisualCMS() {
                     <option value="/projects">Portfolio Archive</option>
                     <option value="/services">Services Archive</option>
                     <option value="/blog">Journal Archive</option>
+                    <option value="/reviews">Perspectives (Reviews)</option> {/* Added option */}
                     <option value="/contact">Contact Page</option>
                   </>
                 ) : (
@@ -200,7 +199,6 @@ export default function ProfessionalVisualCMS() {
             return (
               <div key={item.id} className="group animate-in fade-in slide-in-from-left-2">
                 <div className="flex items-center justify-between mb-3">
-                    {/* 🎯 Updated: Label hover color to RISA Green */}
                     <label className="text-[9px] uppercase tracking-[0.4em] font-black text-zinc-400 italic group-hover:text-[var(--accent-gold)] transition-colors">
                     {item.section_key.replace(/_/g, ' ')}
                     </label>
@@ -248,7 +246,6 @@ export default function ProfessionalVisualCMS() {
       {/* ➡️ RIGHT: PREVIEW CANVAS */}
       <div className="flex-1 bg-[var(--bg-warm)] p-12 flex flex-col items-center">
         <div className="bg-white p-1 rounded-full shadow-2xl flex border border-zinc-100 mb-10">
-          {/* 🎯 Updated: Button active background to Rich Black */}
           <button onClick={() => setViewMode('desktop')} className={`px-6 py-2 rounded-full transition-all flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest ${viewMode === 'desktop' ? 'bg-[var(--text-primary)] text-white' : 'text-zinc-400 hover:text-zinc-900'}`}><Monitor size={14} /> Desktop</button>
           <button onClick={() => setViewMode('mobile')} className={`px-6 py-2 rounded-full transition-all flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest ${viewMode === 'mobile' ? 'bg-[var(--text-primary)] text-white' : 'text-zinc-400 hover:text-zinc-900'}`}><Smartphone size={14} /> Mobile</button>
         </div>
@@ -259,8 +256,8 @@ export default function ProfessionalVisualCMS() {
           <iframe 
             ref={iframeRef}
             src={
-              activeTab === '/services/[slug]' ? '/services/interior-architecture' : 
-              activeTab === '/projects/[slug]' ? '/projects/skyte' : 
+              activeTab === '/services/[slug]' ? '/services/nui' : 
+              activeTab === '/projects/[slug]' ? '/projects/commercial-office' : 
               activeTab === '/blog/[slug]' ? '/blog/5-trends-in-modern-minimalist-design-for-2026' : 
               activeTab
             } 
@@ -275,7 +272,6 @@ export default function ProfessionalVisualCMS() {
       {showNavWarning && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#1C1C1C]/40 backdrop-blur-sm p-6">
           <div className="bg-[var(--bg-warm)] max-w-sm w-full p-12 text-center shadow-[0_40px_80px_-15px_rgba(0,0,0,0.3)] border border-white animate-in zoom-in-95 duration-500">
-            {/* 🎯 Updated: Icon color to RISA Green */}
             <AlertTriangle className="mx-auto text-[var(--accent-gold)] mb-8" size={32} />
             <h3 className="text-[11px] uppercase tracking-[0.5em] font-black text-zinc-900 mb-4 italic">Unsaved Evolution</h3>
             <p className="text-zinc-500 text-[11px] leading-loose tracking-widest mb-10 font-bold opacity-70">The current vision has not been chronicled. Discard these edits to transition?</p>
@@ -308,15 +304,12 @@ export default function ProfessionalVisualCMS() {
         <div className="fixed inset-0 z-[1001] flex items-center justify-center bg-[#1C1C1C]/40 backdrop-blur-sm p-6">
           <div className="bg-[var(--bg-warm)] max-w-sm w-full p-12 text-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-white animate-in zoom-in-95 fade-in duration-500">
             <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
-              {/* 🎯 Updated: Icon color to RISA Green */}
               <CheckCircle2 className="text-[var(--accent-gold)]" size={40} />
             </div>
-            {/* 🎯 Updated: High-contrast label color for Black visibility */}
             <h3 className="text-[11px] uppercase tracking-[0.5em] font-black text-zinc-900 mb-4 italic">Vision Chronicled</h3>
             <p className="text-zinc-500 text-[10px] leading-loose tracking-[0.2em] mb-10 font-bold opacity-70 uppercase">Your narrative has been successfully synchronized with the live environment.</p>
             <button 
               onClick={() => setShowSuccessPopup(false)} 
-              // 🎯 Updated: Button color to RISA Green and Rich Black hover
               className="w-full py-5 bg-[var(--accent-gold)] text-white text-[9px] uppercase font-black tracking-[0.4em] shadow-xl hover:bg-[var(--text-primary)] transition-all duration-500"
             >
               Continue Refinement

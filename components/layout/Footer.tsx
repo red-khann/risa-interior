@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useContent } from '../PreviewProvider'; 
-import { Facebook, Instagram, Youtube, Twitter } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Twitter, MapPin } from 'lucide-react';
 
 export const Footer = () => {
   const content = useContent();
@@ -14,13 +14,12 @@ export const Footer = () => {
     infoLabel: getVal('footer_info_label', "Information"),
     navLabel: getVal('footer_nav_label', "Navigation"),
     contactLabel: getVal('footer_contact_label', "Contact Us"),
-    newsLabel: getVal('footer_news_label', "Newsletter"),
-    newsPlaceholder: getVal('footer_news_placeholder', "EMAIL ADDRESS"),
-    newsButton: getVal('footer_news_button', "Subscribe"),
     privacyLabel: getVal('footer_privacy_label', "Privacy Policy"),
     termsLabel: getVal('footer_terms_label', "Term of Use"),
     aboutText: getVal('footer_about_text', "Luxury interior design."),
     location: getVal('footer_location', "Location"),
+    // 🎯 New Dynamic Map URL
+    mapUrl: getVal('footer_map_url', "#"), 
     email: getVal('footer_email', "email@example.com"),
     phone: getVal('footer_phone', "phone"),
     copyright: getVal('footer_copyright', `© ${new Date().getFullYear()} RISA.`),
@@ -49,12 +48,11 @@ export const Footer = () => {
     <footer className="bg-[var(--text-primary)] text-white pt-24 pb-8 selection:bg-[var(--accent-light)]/30" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">Footer</h2>
       <div className="max-w-[1440px] mx-auto px-8 md:px-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 mb-24">
           
           {/* Info & Socials */}
           <section className="space-y-8">
             <div className="inline-block border-b border-white/20 pb-2">
-               {/* 🎯 Information Heading: Strictly White */}
                <h3 className="text-xl font-bold tracking-widest uppercase text-white">{footerData.infoLabel}</h3>
             </div>
             <p className="text-zinc-500 text-sm leading-relaxed max-w-xs uppercase tracking-wider italic font-serif">
@@ -64,7 +62,6 @@ export const Footer = () => {
               {socials.map((social, i) => (
                 <a key={i} href={social.url} target="_blank" rel="noopener noreferrer" 
                    aria-label={social.label}
-                 
                    className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-white hover:bg-[var(--accent-light)] hover:border-[var(--accent-light)] transition-all duration-500">
                   {social.icon}
                 </a>
@@ -88,36 +85,27 @@ export const Footer = () => {
             </ul>
           </nav>
 
-          {/* Contact Details */}
+          {/* Contact Details with Dynamic Map Link */}
           <section className="space-y-10">
             <div className="inline-block border-b border-[var(--accent-light)]/20 pb-2">
               <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-[var(--accent-light)]">{footerData.contactLabel}</h4>
             </div>
             <address className="not-italic space-y-4 text-[11px] text-zinc-400 uppercase tracking-widest font-bold">
-              <p className="leading-relaxed">{footerData.location}</p>
-              <p><a href={`mailto:${footerData.email}`} className="hover:text-white transition-colors">{footerData.email}</a></p>
+              {/* 🎯 Updated: Location now links to the dynamic mapUrl */}
+              <a 
+                href={footerData.mapUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-start gap-2 hover:text-white transition-colors group"
+              >
+                <MapPin size={14} className="mt-0.5 text-[var(--accent-light)] group-hover:scale-110 transition-transform" />
+                <span className="leading-relaxed underline underline-offset-4 decoration-zinc-800 group-hover:decoration-[var(--accent-light)]">
+                  {footerData.location}
+                </span>
+              </a>
+              <p><a href={`mailto:${footerData.email}`} className="hover:text-white transition-colors block mt-2">{footerData.email}</a></p>
               <p><a href={`tel:${footerData.phone}`} className="hover:text-white transition-colors">{footerData.phone}</a></p>
             </address>
-          </section>
-
-          {/* Newsletter */}
-          <section className="space-y-10">
-            <div className="inline-block border-b border-[var(--accent-light)]/20 pb-2">
-              <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-[var(--accent-light)]">{footerData.newsLabel}</h4>
-            </div>
-            <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
-              <label htmlFor="footer-email" className="sr-only">Email Address</label>
-              <input 
-                id="footer-email"
-                type="email" 
-                placeholder={footerData.newsPlaceholder} 
-                required
-                className="bg-zinc-900 border border-zinc-800 p-4 text-[10px] tracking-widest focus:border-[var(--accent-light)] outline-none" 
-              />
-              <button type="submit" className="bg-zinc-800 py-4 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--accent-gold)] transition-all">
-                {footerData.newsButton}
-              </button>
-            </form>
           </section>
         </div>
 

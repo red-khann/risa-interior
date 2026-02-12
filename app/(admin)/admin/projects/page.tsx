@@ -1,44 +1,97 @@
-'use client'
-import { useState, useMemo, useEffect } from 'react';
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Search as SearchIcon, Edit3, Trash2, 
   Eye, EyeOff, Globe, ArrowUpDown, Loader2, AlertTriangle,
-  Star, StarOff, Hash, Folder
+  Star, StarOff, Hash, Folder, ChevronLeft, ChevronRight, Filter, Inbox
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import { createClient } from '@/utils/supabase/client';
 import { logActivity } from '@/utils/supabase/logger';
+import { toast, Toaster } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
+// 🎯 Range set to 15 as per studio standards
+const ITEMS_PER_PAGE = 15;
 const CATEGORIES = ["All", "Residential", "Commercial", "Hospitality", "Interior", "Restoration"];
 const STATUS_OPTIONS = ["All Status", "Completed", "Under Development"];
 const VISIBILITY_OPTIONS = ["All Visibility", "Active (Live)", "Draft (Internal)", "Featured on Home"];
 
 export default function AdminProjectsPage() {
   const supabase = createClient();
-  const router = useRouter();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filtering, Search & Sorting State
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeStatus, setActiveStatus] = useState('All Status');
   const [activeVisibility, setActiveVisibility] = useState('All Visibility');
-  const [loading, setLoading] = useState(true);
-  
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  const [projects, setProjects] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState('newest');
+
+  // 🗑️ Themed Delete Modal State
   const [deleteModal, setDeleteModal] = useState({ show: false, id: '', title: '', imageUrl: '' });
+
+  useEffect(() => {
+    fetchProjects();
+  }, [currentPage, activeCategory, activeStatus, activeVisibility, searchTerm, sortBy]);
 
   async function fetchProjects() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (!error) setProjects(data || []);
-    setLoading(false);
-  }
+    try {
+      let query = supabase
+        .from('projects')
+        .select('*', { count: 'exact' });
 
-  useEffect(() => { fetchProjects(); }, []);
+      // 🎯 Search Logic
+      if (searchTerm.trim() !== '') {
+        query = query.ilike('title', `%${searchTerm}%`);
+      }
+
+      // Category Filter
+      if (activeCategory !== 'All') {
+        query = query.eq('category', activeCategory);
+      }
+
+      // Project Phase Status Filter
+      if (activeStatus !== 'All Status') {
+        query = query.eq('phase', activeStatus);
+      }
+
+      // Visibility Logic
+      if (activeVisibility !== 'All Visibility') {
+        if (activeVisibility === "Active (Live)") query = query.eq('status', 'Active');
+        if (activeVisibility === "Draft (Internal)") query = query.eq('status', 'Draft');
+        if (activeVisibility === "Featured on Home") query = query.eq('is_featured', true);
+      }
+
+      // 🎯 Sorting Logic
+      if (sortBy === 'newest') {
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      } else if (sortBy === 'order') {
+        query = query.order('featured_order', { ascending: true });
+      }
+
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, count, error } = await query.range(from, to);
+
+      if (error) throw error;
+      if (data) setProjects(data);
+      if (count !== null) setTotalCount(count);
+    } catch (err) {
+      toast.error("Fetch Error", { description: "Failed to synchronize with project archive." });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const deleteFromCloudinary = async (url: string) => {
     try {
@@ -58,6 +111,7 @@ export default function AdminProjectsPage() {
     if (!error) {
       await logActivity('UPDATE', `${title} ${newVal ? 'set as Featured' : 'removed from Featured'}`, 'PROJECT');
       setProjects(prev => prev.map(p => p.id === id ? { ...p, is_featured: newVal } : p));
+      toast.success("Spotlight Updated", { description: `${title} status synchronized.` });
     }
   };
 
@@ -65,17 +119,18 @@ export default function AdminProjectsPage() {
     const { error } = await supabase.from('projects').update({ featured_order: newOrder }).eq('id', id);
     if (!error) {
       setProjects(prev => prev.map(p => p.id === id ? { ...p, featured_order: newOrder } : p));
+      toast.success("Order Documented");
     }
   };
 
   const handleStatusToggle = async (id: string, currentStatus: string, title: string) => {
     const newStatus = currentStatus === 'Draft' ? 'Active' : 'Draft';
-    const { error } = await supabase.from('blog').update({ status: newStatus }).eq('id', id); // Logic preserved as per snippet
-    const { error: projectError } = await supabase.from('projects').update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', id);
     
-    if (!projectError) {
+    if (!error) {
       await logActivity('TOGGLE', `${title} to ${newStatus}`, 'PROJECT');
       setProjects(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      toast.success("Lifecycle Updated");
     }
   };
 
@@ -87,209 +142,174 @@ export default function AdminProjectsPage() {
     const { error } = await supabase.from('projects').delete().eq('id', deleteModal.id);
     if (!error) {
       await logActivity('DELETE', deleteModal.title, 'PROJECT');
-      setProjects(prev => prev.filter(p => p.id !== deleteModal.id));
+      toast.error("Narrative Purged");
       setDeleteModal({ show: false, id: '', title: '', imageUrl: '' });
+      fetchProjects();
     }
   };
 
-  const handleSort = (key: string) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
-    }));
-  };
-
-  const filteredProjects = useMemo(() => {
-    return projects
-      .filter((project) => {
-        const matchesSearch = project.title?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = activeCategory === "All" || project.category === activeCategory;
-        const matchesStatus = activeStatus === "All Status" || project.phase === activeStatus;
-        const matchesVisibility = activeVisibility === "All Visibility" || 
-                                   (activeVisibility === "Active (Live)" && project.status === "Active") ||
-                                   (activeVisibility === "Draft (Internal)" && project.status === "Draft") ||
-                                   (activeVisibility === "Featured on Home" && project.is_featured);
-        return matchesSearch && matchesCategory && matchesStatus && matchesVisibility;
-      })
-      .sort((a, b) => {
-        const factor = sortConfig.direction === 'desc' ? -1 : 1;
-        if (sortConfig.key === 'order') return (a.featured_order - b.featured_order) * factor;
-        if (sortConfig.key === 'date') return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * factor;
-        if (sortConfig.key === 'identity') return (a.title || "").localeCompare(b.title || "") * factor;
-        if (sortConfig.key === 'status') return (a.phase || "").localeCompare(b.phase || "") * factor;
-        if (sortConfig.key === 'visibility') return (a.status || "").localeCompare(b.status || "") * factor;
-        return 0;
-      });
-  }, [searchTerm, activeCategory, activeStatus, activeVisibility, sortConfig, projects]);
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-[60vh]">
-      {/* 🎯 Updated: Brand Loader color */}
-      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
-    </div>
-  );
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 relative pb-20 w-full overflow-x-hidden bg-[var(--bg-warm)]">
+    <main className="min-h-screen bg-[#F7F5F2] pt-24 md:pt-32 pb-20 px-4 md:px-10 selection:bg-[var(--accent-gold)]/20">
+      <Toaster position="top-right" richColors />
       
-      {/* 🏛️ DELETE MODAL */}
-      {deleteModal.show && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="bg-white border border-zinc-200 p-12 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="text-red-500" size={32} />
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-12 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <span className="text-[10px] uppercase tracking-[0.6em] font-bold text-[var(--accent-gold)] mb-4 block italic">Studio Archive</span>
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-zinc-900 uppercase leading-none">
+                Portfolio <span className="font-serif italic font-light text-zinc-400">Manager</span>
+              </h2>
+            </motion.div>
+            <Link href="/admin/projects/new">
+              <button className="bg-zinc-900 text-white px-8 py-5 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center gap-3 shadow-xl">
+                <Plus size={16} /> Add New Narrative
+              </button>
+            </Link>
+          </div>
+
+          {/* 🎯 THEME COMMAND BAR */}
+          <div className="flex flex-wrap gap-4 pt-8 border-t border-zinc-200">
+            <div className="flex flex-1 min-w-[280px] items-center gap-3 bg-white px-4 py-2 border border-zinc-100 focus-within:border-[var(--accent-gold)] transition-colors">
+              <SearchIcon size={14} className="text-[var(--accent-gold)]" />
+              <input 
+                type="text"
+                placeholder="Search Identity..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="w-full text-[10px] uppercase font-bold tracking-widest outline-none bg-transparent placeholder:text-zinc-300"
+              />
             </div>
-            <h2 className="text-[12px] uppercase tracking-[0.4em] font-bold text-zinc-900 mb-2">Confirm Removal</h2>
-            <p className="text-zinc-400 text-[10px] uppercase tracking-widest leading-relaxed mb-8">
-              Delete <span className="text-zinc-900 font-bold">"{deleteModal.title}"</span>?
-            </p>
-            <div className="flex gap-4">
-              <button onClick={() => setDeleteModal({ show: false, id: '', title: '', imageUrl: '' })} className="flex-1 py-3 border border-zinc-200 text-[9px] uppercase font-bold tracking-widest hover:bg-zinc-50 transition-all">Cancel</button>
-              <button onClick={confirmDelete} className="flex-1 py-3 bg-red-600 text-white text-[9px] uppercase font-bold tracking-widest hover:bg-red-700 transition-all">Confirm Delete</button>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <Globe size={14} className="text-[var(--accent-gold)]" />
+              <select value={activeVisibility} onChange={(e) => { setActiveVisibility(e.target.value); setCurrentPage(1); }} className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent">
+                {VISIBILITY_OPTIONS.map(v => <option key={v} value={v}>{v.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <Filter size={14} className="text-[var(--accent-gold)]" />
+              <select value={activeCategory} onChange={(e) => { setActiveCategory(e.target.value); setCurrentPage(1); }} className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent">
+                {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white px-4 py-2 border border-zinc-100">
+              <ArrowUpDown size={14} className="text-[var(--accent-gold)]" />
+              <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }} className="text-[10px] uppercase font-bold tracking-widest outline-none cursor-pointer bg-transparent">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="order">Featured Order</option>
+              </select>
             </div>
           </div>
-        </div>
-      )}
+        </header>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4 md:px-0">
-        <div>
-          <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold block mb-2">Studio Archive</span>
-          <h2 className="md:hidden text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Project Pulse</h2>
-          <h2 className="hidden md:block text-4xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Portfolio Management</h2>
-        </div>
-        <Link href="/admin/projects/new" className="hidden md:block">
-          {/* 🎯 Updated: Button to Rich Black & Green hover */}
-          <button className="bg-[var(--text-primary)] text-white px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[var(--accent-gold)] transition-all flex items-center gap-3 shadow-lg rounded-sm">
-            <Plus size={16} /> Add New Narrative
-          </button>
-        </Link>
-      </div>
-
-      {/* COMMAND BAR */}
-      <div className="mx-4 md:mx-0 flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 border border-zinc-100 shadow-sm sticky top-0 z-30 md:relative">
-        <div className="relative w-full md:w-64">
-           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-           {/* 🎯 Updated: Focus border to RISA Green */}
-           <input type="text" placeholder="SEARCH PROJECTS..." className="bg-zinc-50 border border-zinc-200 pl-10 pr-4 py-2 text-[10px] tracking-widest font-bold w-full outline-none focus:border-[var(--accent-gold)] uppercase text-zinc-800" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        </div>
-        
-        <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar gap-3">
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-[var(--accent-gold)] min-w-[130px]" value={activeVisibility} onChange={(e) => setActiveVisibility(e.target.value)}>
-            {VISIBILITY_OPTIONS.map(v => <option key={v} value={v}>{v.toUpperCase()}</option>)}
-          </select>
-          
-          <select className="hidden md:block bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeStatus} onChange={(e) => setActiveStatus(e.target.value)}>
-            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-          </select>
-          
-          <select className="bg-zinc-50 border border-zinc-200 px-4 py-2 text-[10px] uppercase tracking-widest font-bold outline-none cursor-pointer text-zinc-500 min-w-[130px]" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* 📱 MOBILE VIEW */}
-      <div className="md:hidden space-y-4 px-4">
-        {filteredProjects.map((project) => {
-          const isDraft = project.status === "Draft";
-          return (
-            <div key={project.id} className="bg-white border border-zinc-100 p-6 rounded-[2rem] shadow-sm space-y-5">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-4 overflow-hidden">
-                  <div className="w-12 h-12 rounded-full bg-zinc-50 overflow-hidden flex items-center justify-center border border-zinc-100 shrink-0">
-                    {project.image_url ? (
-                      <img src={project.image_url} className="w-full h-full object-cover grayscale" alt="" />
-                    ) : (
-                      <Folder size={18} className="text-zinc-300" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold uppercase tracking-tighter text-zinc-900 leading-none mb-1 truncate">{project.title}</h4>
-                    <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase truncate">{project.category}</p>
-                  </div>
-                </div>
-                <div className={`w-2 h-2 rounded-full shrink-0 ${isDraft ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
-              </div>
-
-              <div className="flex justify-between items-center pt-4 border-t border-zinc-50">
-                 <div className="flex items-center gap-2 overflow-hidden">
-                   <Globe size={10} className="text-zinc-300 shrink-0" />
-                   <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest truncate">{project.location || 'Global Archive'}</span>
-                 </div>
-                 
-                 <div className="flex items-center gap-5 shrink-0 pl-2">
-                    <button 
-                      onClick={() => handleFeatureToggle(project.id, project.is_featured, project.title)} 
-                      className={project.is_featured ? 'text-amber-500' : 'text-zinc-200'}
-                    >
-                      <Star size={20} fill={project.is_featured ? "currentColor" : "none"} />
-                    </button>
-                    <button 
-                      onClick={() => handleStatusToggle(project.id, project.status, project.title)} 
-                      className="text-zinc-300"
-                    >
-                      {isDraft ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                 </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 💻 DESKTOP VIEW */}
-      <div className="hidden md:block bg-white border border-zinc-100 shadow-xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            {/* 🎯 Updated: Table Header to Rich Black */}
-            <tr className="bg-[var(--text-primary)] text-white">
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center">Featured</th>
-              {/* 🎯 Updated: Hover colors to Champagne Gold for luxury contrast */}
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('order')}>Order <Hash size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('identity')}>Identity <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('status')}>Project Status <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-center cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('visibility')}>Lifecycle <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right cursor-pointer hover:text-[var(--accent-light)] transition-colors" onClick={() => handleSort('date')}>Date <ArrowUpDown size={10} className="inline ml-1" /></th>
-              <th className="p-6 text-[9px] uppercase tracking-[0.3em] font-bold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {filteredProjects.map((project) => {
-               const isDraft = project.status === "Draft";
-               return (
-                <tr key={project.id} className={`hover:bg-zinc-50/50 group transition-colors ${project.is_featured ? 'bg-zinc-50/30' : ''}`}>
-                  <td className="p-6 text-center">
-                    <button onClick={() => handleFeatureToggle(project.id, project.is_featured, project.title)} className={`transition-all duration-300 transform hover:scale-125 ${project.is_featured ? 'text-amber-500' : 'text-zinc-200 hover:text-zinc-400'}`}>
-                      {project.is_featured ? <Star size={18} fill="currentColor" /> : <StarOff size={18} />}
-                    </button>
-                  </td>
-                  <td className="p-6">
-                    <input type="number" min="0" className="w-12 bg-transparent border-b border-zinc-100 text-[10px] font-bold text-zinc-900 focus:border-[var(--accent-gold)] outline-none" value={project.featured_order || 0} onChange={(e) => handleOrderUpdate(project.id, parseInt(e.target.value))} disabled={!project.is_featured} />
-                  </td>
-                  <td className="p-6"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-zinc-200 overflow-hidden border border-zinc-100 shadow-sm shrink-0"><img src={project.image_url} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" /></div><div className="min-w-0"><p className="text-sm font-bold text-[var(--text-primary)] tracking-tight uppercase truncate">{project.title}</p><p className="text-[10px] text-zinc-400 uppercase flex items-center gap-1"><Globe size={10} className="text-[var(--accent-gold)]" /> {project.location || 'Global'}</p></div></div></td>
-                  <td className="p-6"><span className={`text-[9px] font-bold uppercase tracking-tighter px-2 py-1 rounded-sm border ${project.phase === 'Under Development' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{project.phase || 'Completed'}</span></td>
-                  <td className="p-6 text-center"><div className="flex flex-col items-center justify-center gap-1"><div className={`w-2 h-2 rounded-full ${isDraft ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} /><span className={`text-[8px] font-bold uppercase tracking-widest ${isDraft ? 'text-amber-600' : 'text-green-600'}`}>{project.status}</span></div></td>
-                  <td className="p-6 text-right text-[10px] font-bold text-zinc-400 uppercase">{new Date(project.created_at).toLocaleDateString()}</td>
-                  <td className="p-6 text-right">
-                    <div className="flex justify-end items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleStatusToggle(project.id, project.status, project.title)} className="text-zinc-400 hover:text-[var(--accent-gold)] transition-colors">{isDraft ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-                      <Link href={`/admin/projects/edit/${project.id}`} className="text-zinc-400 hover:text-[var(--text-primary)] transition-colors"><Edit3 size={14} /></Link>
-                      <button onClick={() => setDeleteModal({ show: true, id: project.id, title: project.title, imageUrl: project.image_url })} className="text-zinc-300 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+        {loading ? (
+          <div className="flex flex-col items-center py-40 gap-4">
+            <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <AnimatePresence mode="popLayout">
+              {projects.length > 0 ? (
+                projects.map((project) => (
+                  <motion.div layout key={project.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="bg-white border border-zinc-100 p-6 md:p-8 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between group hover:shadow-xl transition-all duration-500"
+                  >
+                    <div className="flex-1 space-y-4 w-full">
+                      <div className="flex items-center justify-between lg:justify-start gap-6">
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => handleFeatureToggle(project.id, project.is_featured, project.title)} className={`transition-all duration-300 ${project.is_featured ? 'text-amber-500' : 'text-zinc-200 hover:text-zinc-400'}`}>
+                            {project.is_featured ? <Star size={18} fill="currentColor" /> : <StarOff size={18} />}
+                          </button>
+                          <div className={`w-2 h-2 rounded-full ${project.status === 'Draft' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                          <span className={`text-[9px] uppercase tracking-widest font-black ${project.status === 'Draft' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {project.status}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em]">{new Date(project.created_at).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-16 bg-zinc-100 overflow-hidden shrink-0 border border-zinc-100">
+                          {project.image_url ? (
+                            <img src={project.image_url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="" />
+                          ) : <div className="w-full h-full flex items-center justify-center text-zinc-200"><Folder size={20} /></div>}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-zinc-900 text-xl uppercase tracking-tight leading-none mb-2">
+                            {project.title}
+                          </h3>
+                          <div className="flex items-center gap-3">
+                             <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-1 rounded-sm border ${project.phase === 'Under Development' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{project.phase || 'Completed'}</span>
+                             <span className="text-[8px] font-black uppercase tracking-tighter px-2 py-1 bg-zinc-50 text-zinc-400 border border-zinc-100 rounded-sm italic">{project.category}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-               )
-            })}
-          </tbody>
-        </table>
+
+                    <div className="flex items-center gap-3 w-full lg:w-auto pt-6 lg:pt-0 border-t lg:border-t-0 border-zinc-50">
+                      {project.is_featured && (
+                         <div className="flex flex-col items-center gap-1 p-2 border border-zinc-100">
+                            <span className="text-[7px] font-black text-zinc-300 uppercase">Order</span>
+                            <input type="number" min="0" className="w-10 bg-transparent text-center text-[10px] font-bold text-zinc-900 outline-none" value={project.featured_order || 0} onChange={(e) => handleOrderUpdate(project.id, parseInt(e.target.value))} />
+                         </div>
+                      )}
+                      <button onClick={() => handleStatusToggle(project.id, project.status, project.title)} className="p-4 border border-zinc-100 text-zinc-300 hover:text-[var(--accent-gold)] transition-all">
+                        {project.status === 'Draft' ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <Link href={`/admin/projects/edit/${project.id}`} className="flex-1 lg:flex-none">
+                        <button className="w-full p-4 border border-zinc-100 text-zinc-400 hover:text-zinc-900 transition-all flex items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-widest">
+                          <Edit3 size={16} /> Edit
+                        </button>
+                      </Link>
+                      <button onClick={() => setDeleteModal({ show: true, id: project.id, title: project.title, imageUrl: project.image_url })} className="p-4 border border-zinc-100 text-zinc-200 hover:text-red-600 transition-all">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="py-40 text-center border border-dashed border-zinc-200 bg-white/50">
+                  <Inbox size={40} className="mx-auto mb-4 text-zinc-300" />
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-black">Archive Void: No Narratives Found</p>
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* 🎯 THEME PAGINATION */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-8 pt-12">
+                <button disabled={currentPage === 1} onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo(0,0); }} className="p-4 border border-zinc-100 disabled:opacity-30 hover:bg-white transition-all shadow-sm"><ChevronLeft size={20} /></button>
+                <span className="text-[10px] uppercase tracking-widest font-black text-zinc-400">Folio {currentPage} <span className="mx-2 text-zinc-200">/</span> {totalPages}</span>
+                <button disabled={currentPage === totalPages} onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo(0,0); }} className="p-4 border border-zinc-100 disabled:opacity-30 hover:bg-white transition-all shadow-sm"><ChevronRight size={20} /></button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {filteredProjects.length === 0 && (
-        <div className="py-20 text-center text-zinc-400 text-[10px] uppercase font-bold tracking-[0.4em]">
-          No projects found in archive
-        </div>
-      )}
-    </div>
+      {/* 🏛️ THEME-MATCHED DESTRUCTIVE MODAL */}
+      <AnimatePresence>
+        {deleteModal.show && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteModal({ ...deleteModal, show: false })} className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative bg-white p-8 md:p-12 max-w-md w-full border border-zinc-100 shadow-2xl">
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6"><AlertTriangle className="text-red-500" size={32} /></div>
+              <h3 className="text-[10px] uppercase tracking-[0.5em] font-bold text-red-500 mb-6 text-center italic">Destructive Protocol</h3>
+              <p className="text-2xl font-serif italic text-zinc-900 mb-10 leading-snug text-center">Purge <span className="text-[var(--accent-gold)]">"{deleteModal.title}"</span> from the studio archive?</p>
+              <div className="flex gap-4">
+                <button onClick={confirmDelete} className="flex-1 py-4 bg-zinc-900 text-white text-[10px] uppercase font-bold hover:bg-red-600 transition-colors">Confirm Purge</button>
+                <button onClick={() => setDeleteModal({ ...deleteModal, show: false })} className="flex-1 py-4 border border-zinc-200 text-[10px] uppercase font-bold hover:bg-zinc-50 transition-all shadow-sm">Cancel</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </main>
   );
 }

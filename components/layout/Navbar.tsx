@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image'; 
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useContent } from '../PreviewProvider'; 
 
@@ -32,18 +32,25 @@ export const Navbar = () => {
     links = [{ label: 'Home', path: '/' }, { label: 'Contact', path: '/contact' }];
   }
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isOpen]);
+
   return (
     <nav 
       aria-label="Main Navigation"
-      // 🎯 bar stays slim with low padding
       className="fixed top-0 w-full z-[100] bg-[var(--bg-warm)] border-b border-zinc-200 py-2 lg:py-3 selection:bg-[var(--accent-gold)]/30"
     >
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12 flex items-center justify-between gap-4">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-8 lg:px-12 flex items-center justify-between">
         
-        {/* 🏛️ ULTRA ZOOMED LOGO */}
-        <Link href="/" className="shrink-0" title={brandName}>
-          {/* 🎯 Using scale-130 (Mobile) and scale-150 (Desktop) for a bold look without increasing bar height */}
-          <div className="relative w-48 h-16 lg:w-[280px] lg:h-20 transform scale-[1.3] lg:scale-[1.5] origin-left transition-transform duration-500 hover:scale-[1.35] lg:hover:scale-[1.55]">
+        {/* 🏛️ BOLD LOGO: Locked Scale */}
+        <Link href="/" className="shrink-0 relative z-[110]" title={brandName}>
+          {/* 🎯 scale-[1.3] (Mobile) and scale-[1.5] (Desktop) preserved as requested */}
+          <div className="relative w-48 h-16 lg:w-[280px] lg:h-20 transform scale-[1.3] lg:scale-[1.5] origin-left transition-transform duration-500">
             <Image 
               src="/logo.svg" 
               alt="RISA Interior & Contractors"
@@ -55,28 +62,36 @@ export const Navbar = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <ul className="hidden md:flex items-center gap-8 lg:gap-12 list-none shrink">
-          {links.map((link: any) => {
-            const isActive = link.path === '/' ? pathname === '/' : pathname.startsWith(link.path);
-            return (
-              <li key={link.path} className="whitespace-nowrap">
-                <Link 
-                  href={link.path} 
-                  className={`text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black transition-all duration-300 hover:text-[var(--accent-gold)] ${
-                    isActive ? 'text-[var(--accent-gold)]' : 'text-zinc-900'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {/* 🧭 DESKTOP NAVIGATION: Adaptive Spacing */}
+        <div className="hidden md:flex items-center justify-end flex-1 ml-8">
+          <ul className="flex items-center list-none m-0 p-0 
+            /* 🎯 Gap narrows as screen gets smaller to prevent overflow */
+            gap-3 lg:gap-8 xl:gap-12">
+            {links.map((link: any) => {
+              const isActive = link.path === '/' ? pathname === '/' : pathname.startsWith(link.path);
+              return (
+                <li key={link.path} className="shrink-0">
+                  <Link 
+                    href={link.path} 
+                    className={`
+                      /* 🎯 Text stays at 10px-11px to maintain weight */
+                      text-[10px] lg:text-[11px] 
+                      uppercase tracking-[0.15em] lg:tracking-[0.3em] font-black 
+                      transition-all duration-300 hover:text-[var(--accent-gold)] 
+                      ${isActive ? 'text-[var(--accent-gold)]' : 'text-zinc-900'}
+                    `}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-[var(--text-primary)] z-[110]" 
+          className="md:hidden text-zinc-900 z-[110] p-2" 
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X size={28} /> : (

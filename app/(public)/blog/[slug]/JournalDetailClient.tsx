@@ -1,23 +1,67 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Share2, Bookmark, Clock, Tag, MessageSquare } from "lucide-react"; 
+import { 
+  ArrowLeft, Share2, Bookmark, Clock, Tag, MessageSquare, 
+  Maximize2, ChevronRight 
+} from "lucide-react"; 
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useContent } from '@/components/PreviewProvider';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// 🎯 Component imports
+import ReviewForm from '@/components/reviews/ReviewForm';
+import ReviewStats from '@/components/reviews/ReviewStats';
 
 export default function JournalDetailClient({ slug }: { slug: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [post, setPost] = useState<any>(null);
+  const [allApprovedReviews, setAllApprovedReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [shareStatus, setShareStatus] = useState(false);
   const liveContent = useContent();
 
-  const getUI = (key: string, fallback: string) => {
-    return liveContent[`blog_detail_global:${key}`] || fallback;
+  // 🎯 MICRO-PRECISION STAR LOGIC: Dynamic fills based on exact decimal
+  const StarIcon = ({ fillPercentage }: { fillPercentage: number }) => {
+    const gradientId = `grad-blog-detail-${Math.random().toString(36).substr(2, 9)}`;
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id={gradientId}>
+            <stop offset={`${fillPercentage}%`} stopColor="var(--accent-light)" />
+            <stop offset={`${fillPercentage}%`} stopColor="#e5e7eb" />
+          </linearGradient>
+        </defs>
+        <path 
+          d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" 
+          fill={`url(#${gradientId})`}
+        />
+      </svg>
+    );
   };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex gap-0.5">
+          {[1, 2, 3, 4, 5].map((index) => {
+            let fill = 0;
+            if (rating >= index) fill = 100;
+            else if (rating > index - 1) fill = (rating - (index - 1)) * 100;
+            return <StarIcon key={index} fillPercentage={fill} />;
+          })}
+        </div>
+        <span className="text-[10px] font-black text-[var(--accent-light)] tracking-widest">
+          {rating.toFixed(1)}
+        </span>
+      </div>
+    );
+  };
+
+  const getUI = (key: string, fallback: string) => liveContent[`blog_detail_global:${key}`] || fallback;
 
   const ui = {
     back_label: getUI('back_label', "Back to Journal"),
@@ -27,21 +71,23 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
     protocol_cta: getUI('protocol_cta', "View Protocol"),
     footer_subtitle: getUI('footer_subtitle', "Inquiry Protocol"),
     footer_title: getUI('footer_title', "Have a similar vision?"),
-    footer_button: getUI('footer_button', "Start a conversation")
+    footer_button: getUI('footer_button', "Start a conversation"),
+    review_header: getUI('review_header', "Featured Perspectives")
   };
 
   useEffect(() => {
-    async function fetchJournalPost() {
+    async function fetchJournalData() {
       setLoading(true);
-      const { data: blogData } = await supabase
-        .from('blog')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      if (blogData) setPost(blogData);
-      setLoading(false);
+      try {
+        const { data: blogData } = await supabase.from('blog').select('*').eq('slug', slug).single();
+        const { data: revData } = await supabase.from('reviews').select('*').eq('page_slug', slug).eq('status', 'approved').order('created_at', { ascending: false });
+
+        if (blogData) setPost(blogData);
+        if (revData) setAllApprovedReviews(revData);
+      } catch (err) { console.error("Fetch error:", err); }
+      finally { setLoading(false); }
     }
-    if (slug) fetchJournalPost();
+    if (slug) fetchJournalData();
   }, [slug, supabase]);
 
   useEffect(() => {
@@ -52,6 +98,7 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
   }, [post]);
 
   const readingTime = post ? Math.ceil(post.content.split(/\s+/).length / 200) || 1 : 0;
+  const featuredReviews = allApprovedReviews.filter(r => r.is_featured === true);
 
   const handleShare = async () => {
     try {
@@ -74,7 +121,7 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[var(--bg-warm)] flex items-center justify-center animate-pulse text-[10px] tracking-[0.4em] text-zinc-400 uppercase">
+    <div className="min-h-screen bg-[var(--bg-warm)] flex items-center justify-center animate-pulse text-[10px] tracking-[0.4em] text-zinc-400 uppercase font-black">
       Initiating Narrative...
     </div>
   );
@@ -85,7 +132,6 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
     <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/10 overflow-x-hidden">
       <article className="max-w-[1100px] mx-auto px-6" itemScope itemType="https://schema.org/BlogPosting">
         
-        {/* Back Button with Brand Accent */}
         <button onClick={() => router.back()} className="group flex items-center gap-3 mb-16 text-[10px] uppercase tracking-[0.4em] font-bold text-zinc-400 hover:text-[var(--accent-gold)] transition-all">
           <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
           {ui.back_label}
@@ -94,7 +140,6 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
         <header className="mb-20">
           <div className="flex items-center justify-between mb-10 pb-6 border-b border-zinc-200">
             <div className="flex items-center gap-6">
-              {/* Category tag in Signature Green */}
               <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-[var(--accent-gold)]">{post.category}</span>
               <time dateTime={post.date} className="text-[10px] uppercase tracking-[0.3em] font-bold text-zinc-400" itemProp="datePublished">
                 {new Date(post.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -116,9 +161,9 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
             {post.title}
           </h1>
           
-          {post.excerpt && (
+          {post.excerpt?.trim() && (
             <p className="max-w-3xl text-xl md:text-2xl text-zinc-500 font-light leading-relaxed mb-12 border-l-2 border-[var(--accent-gold)]/20 pl-8 italic font-serif" itemProp="description">
-              {post.excerpt}
+              "{post.excerpt}"
             </p>
           )}
 
@@ -149,7 +194,8 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
         </figure>
 
         <div className="max-w-[750px] mx-auto">
-          {post.meta_description && (
+          {/* 🎯 FIXED: Clean narrative check using .trim() */}
+          {post.meta_description?.trim() && (
             <aside className="mb-20 p-12 bg-white border border-zinc-100 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent-gold)]" />
                 <p className="text-2xl md:text-3xl font-light leading-snug text-zinc-800 italic font-serif tracking-tight">
@@ -161,7 +207,6 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
           <div className="space-y-12 text-[#333333] font-normal text-xl md:text-2xl leading-[1.8] font-sans tracking-tight" itemProp="articleBody">
             {post.content.split('\n').map((paragraph: string, i: number) => {
                if (!paragraph.trim()) return null;
-               {/* 🎯 Drop-cap now uses RISA Green accent */}
                return <p key={`${post.slug}-p-${i}`} className="opacity-95 first-letter:text-5xl first-letter:font-serif first-letter:mr-3 first-letter:float-left first-letter:text-[var(--accent-gold)] first-letter:font-bold">{paragraph}</p>
             })}
           </div>
@@ -176,12 +221,13 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
                 <h4 className="text-2xl font-bold uppercase tracking-tighter">{post.related_service}</h4>
               </div>
               <Link href="/services" className="relative z-10 flex items-center gap-4 px-8 py-4 bg-white text-zinc-900 text-[10px] uppercase tracking-[0.4em] font-black hover:bg-[var(--accent-gold)] hover:text-white transition-all">
-                {ui.protocol_cta} <ArrowLeft size={14} className="rotate-180" />
+                {ui.protocol_cta} <ChevronRight size={14} />
               </Link>
             </section>
           )}
         </div>
 
+        {/* 🏛️ FOOTER CTA SECTION */}
         <footer className="mt-40 pt-32 border-t border-zinc-200">
             <div className="max-w-2xl mx-auto text-center space-y-12">
               <span className="text-[11px] uppercase tracking-[0.8em] text-[var(--accent-gold)] font-black block">{ui.footer_subtitle}</span>
@@ -191,6 +237,44 @@ export default function JournalDetailClient({ slug }: { slug: string }) {
               </button>
             </div>
         </footer>
+
+        {/* 🏛️ FEATURED PERSPECTIVES */}
+        <section className="mt-40 max-w-[750px] mx-auto border-t border-zinc-200 pt-32 mb-20">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-6">
+              <h2 className="text-[10px] uppercase tracking-[0.6em] font-bold text-zinc-900">{ui.review_header}</h2>
+              <Link href={`/reviews?type=blog&slug=${slug}`}>
+                <button className="group flex items-center gap-2 text-[9px] uppercase tracking-widest font-black text-zinc-400 hover:text-[var(--accent-gold)] transition-colors">
+                  See All {allApprovedReviews.length} Reviews <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+          </div>
+          
+          <ReviewStats reviews={allApprovedReviews} />
+
+          <div className="space-y-16 mb-24">
+            {featuredReviews.length > 0 ? (
+              featuredReviews.map((rev) => (
+                <div key={rev.id} className="relative pl-10 animate-in fade-in duration-700">
+                  <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-[#B89B5E] to-transparent" />
+                  {/* 🎯 Updated Star Row with written numeric rating */}
+                  <div className="mb-4">{renderStars(rev.rating)}</div>
+                  <p className="text-lg text-zinc-600 italic font-serif leading-relaxed mb-4">"{rev.review_text}"</p>
+                  <div className="flex items-center gap-3">
+                       <div className="h-[1px] w-6 bg-zinc-200" />
+                       <p className="text-[9px] uppercase tracking-widest font-black text-zinc-900">— {rev.name}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-[10px] uppercase tracking-widest text-zinc-300 italic">No featured perspectives documented for this narrative.</p>
+            )}
+          </div>
+
+          <div className="pt-10 border-t border-zinc-100">
+            <ReviewForm pageType="blog" pageSlug={slug} />
+          </div>
+        </section>
+
       </article>
     </main>
   );

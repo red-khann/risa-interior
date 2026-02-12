@@ -22,6 +22,7 @@ export const AdminSidebar = () => {
     // 🎯 NEW: Added Protocol Logs entry
     { name: "Protocol Logs", href: "/admin/logs" },
     { name: "Page Content", href: "/admin/content" },
+    { name: "Reviews", href: "/admin/reviews" },
     { name: "Settings", href: "/admin/settings" },
   ];
 
