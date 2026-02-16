@@ -25,6 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     keywords: service.focus_keyword ? [service.focus_keyword, service.service_type, "Architectural Design"] : [service.service_type, "Design"],
+    alternates: {
+        canonical: `https://www.risainterior.in/services/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -44,25 +47,34 @@ export default async function Page({ params }: Props) {
   const { slug } = await params;
   const supabase = await createClient();
 
-  // 🎯 DATA PROTOCOL: Fetch rating data specifically for Google's rich snippets
-  const { data: revData } = await supabase
+  // 🎯 Fetch Service Details
+  const { data: service } = await supabase
+    .from('services')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  // 🎯 Fetch Review Data
+  const { data: reviews } = await supabase
     .from('reviews')
-    .select('rating')
+    .select('*')
     .eq('page_slug', slug)
-    .eq('status', 'approved');
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
 
-  const count = revData?.length || 0;
-  const avg = count > 0 ? (revData!.reduce((a, b) => a + b.rating, 0) / count).toFixed(1) : "5.0";
+  const count = reviews?.length || 0;
+  const avg = count > 0 ? (reviews!.reduce((a, b) => a + b.rating, 0) / count).toFixed(1) : "5.0";
 
-  // 🏛️ JSON-LD SCHEMA: The machine-readable signal for Google Stars
+  // 🏛️ JSON-LD SCHEMA
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "name": slug, // Providing the specific service name
+    "name": service?.name || slug,
+    "description": service?.meta_description,
     "provider": {
       "@type": "LocalBusiness",
       "name": "RISA Interior & Contractors",
-      "image": "https://risa-interior.com/logo.jpg"
+      "image": "https://www.risainterior.in/logo.jpg"
     },
     "aggregateRating": {
       "@type": "AggregateRating",
@@ -75,12 +87,15 @@ export default async function Page({ params }: Props) {
 
   return (
     <>
-      {/* 🎯 Schema Injection: This makes the stars appear in Google Search Console */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ServiceDetailClient slug={slug} />
+      <ServiceDetailClient 
+        slug={slug} 
+        initialService={service} 
+        initialReviews={reviews || []} 
+      />
     </>
   );
 }

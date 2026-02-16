@@ -1,21 +1,21 @@
 'use client';
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowUpRight, Search, ChevronDown, Loader2 } from "lucide-react"; 
+import { ArrowUpRight, Search, ChevronDown } from "lucide-react"; 
 import Link from "next/link";
-import { createClient } from '@/utils/supabase/client';
 import { useContent } from '@/components/PreviewProvider'; 
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ServicesClient() {
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ServicesClientProps {
+  initialServices: any[];
+}
+
+export default function ServicesClient({ initialServices }: ServicesClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDept, setActiveDept] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const liveContent = useContent();
-  const supabase = createClient();
 
   const pageSubtitle = liveContent['services_page:page_subtitle'] || "Studio Expertise";
   const pageTitle = liveContent['services_page:page_title'] || "Execution Perfected";
@@ -58,36 +58,10 @@ export default function ServicesClient() {
     );
   };
 
-  useEffect(() => {
-    async function fetchServices() {
-      setLoading(true);
-      try {
-        const { data: serviceData } = await supabase.from('services').select('*').eq('status', 'Active');
-        const { data: reviewData } = await supabase.from('reviews').select('rating, page_slug').eq('page_type', 'service').eq('status', 'approved');
-
-        if (serviceData) {
-          const formattedServices = serviceData.map(s => {
-            const relevantReviews = reviewData?.filter(r => r.page_slug === s.slug) || [];
-            const avg = relevantReviews.length > 0 
-              ? relevantReviews.reduce((acc, r) => acc + r.rating, 0) / relevantReviews.length 
-              : 0;
-            return { ...s, avgRating: avg };
-          });
-          setServices(formattedServices);
-        }
-      } catch (err) {
-        console.error("Archive Sync Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchServices();
-  }, [supabase]);
-
   const departments = useMemo(() => {
-    const types = Array.from(new Set(services.map(s => s.service_type).filter(Boolean)));
+    const types = Array.from(new Set(initialServices.map(s => s.service_type).filter(Boolean)));
     return ["All Categories", ...types];
-  }, [services]);
+  }, [initialServices]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,14 +74,14 @@ export default function ServicesClient() {
   }, []);
 
   const filteredServices = useMemo(() => {
-    return services.filter((service) => {
+    return initialServices.filter((service) => {
       const matchesSearch = 
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         (service.meta_description && service.meta_description.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesDept = activeDept === "All Categories" || service.service_type === activeDept;
       return matchesSearch && matchesDept;
     });
-  }, [searchQuery, activeDept, services]);
+  }, [searchQuery, activeDept, initialServices]);
 
   return (
     <main className="pt-32 pb-20 bg-[var(--bg-warm)] min-h-screen selection:bg-[var(--accent-gold)]/20 overflow-x-hidden">
@@ -150,10 +124,10 @@ export default function ServicesClient() {
         </nav>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-0">
-          {loading ? (
-              <div className="col-span-full py-40 flex flex-col items-center justify-center gap-4 text-center text-zinc-400 uppercase tracking-widest text-[10px] font-black">
-                <Loader2 className="animate-spin text-[var(--accent-gold)]" size={20} /> Updating...
-              </div>
+          {filteredServices.length === 0 ? (
+             <div className="col-span-full py-40 text-center text-zinc-400 uppercase tracking-widest text-[10px] font-black">
+               No expertise matches your query.
+             </div>
           ) : (
             filteredServices.map((service) => (
               <article key={service.id}>
@@ -167,11 +141,9 @@ export default function ServicesClient() {
                       </div>
 
                       <div className="space-y-4">
-                        {/* 🎯 Applied Micro-Precision Ratings */}
                         {service.avgRating > 0 && renderStars(service.avgRating)}
                         <h3 className="text-3xl font-bold tracking-tighter text-zinc-900 uppercase leading-tight">{service.name}</h3>
                         
-                        {/* 🎯 FIXED: Clean description logic with .trim() */}
                         {service.meta_description?.trim() && (
                            <p className="text-zinc-500 text-base leading-loose font-light italic font-serif opacity-80">
                              "{service.meta_description}"

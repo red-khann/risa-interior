@@ -1,18 +1,19 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { Quote, ChevronLeft, ChevronRight, Loader2, ArrowRight } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Quote, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useContent } from '@/components/PreviewProvider';
 
-export default function TestimonialSlider() {
-  const supabase = createClient();
+interface TestimonialSliderProps {
+  initialReviews: any[];
+}
+
+export default function TestimonialSlider({ initialReviews = [] }: TestimonialSliderProps) {
   const liveContent = useContent();
   
-  const [reviews, setReviews] = useState<any[]>([]);
+  // 🎯 No more internal fetching. We use the reviews passed from the server.
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
 
   const getUI = (key: string, fallback: string) => {
     return liveContent[`home_testimonials:${key}`] || fallback;
@@ -24,8 +25,12 @@ export default function TestimonialSlider() {
     see_all: getUI('see_all_label', "See All Perspectives")
   };
 
+  // 🎯 MICRO-PRECISION STAR COMPONENT
+  // useMemo ensures gradient IDs are consistent between server and client
   const StarIcon = ({ fillPercentage }: { fillPercentage: number }) => {
-    const gradientId = `grad-testimonial-${Math.random().toString(36).substr(2, 9)}`;
+    const uniqueId = useMemo(() => Math.random().toString(36).substr(2, 9), []);
+    const gradientId = `grad-testimonial-${uniqueId}`;
+    
     return (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -61,47 +66,27 @@ export default function TestimonialSlider() {
   };
 
   const next = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % reviews.length);
-  }, [reviews.length]);
+    if (initialReviews.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % initialReviews.length);
+  }, [initialReviews.length]);
 
   const prev = () => {
-    setCurrentIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+    if (initialReviews.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + initialReviews.length) % initialReviews.length);
   };
 
   useEffect(() => {
-    if (reviews.length <= 1) return;
+    if (initialReviews.length <= 1) return;
     const timer = setInterval(next, 6000);
     return () => clearInterval(timer);
-  }, [next, reviews.length]);
+  }, [next, initialReviews.length]);
 
-  useEffect(() => {
-    async function fetchHomeReviews() {
-      setLoading(true);
-      const { data } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('status', 'approved')
-        .eq('show_on_home', true)
-        .order('created_at', { ascending: false });
-
-      if (data) setReviews(data);
-      setLoading(false);
-    }
-    fetchHomeReviews();
-  }, [supabase]);
-
-  if (loading) return (
-    <div className="py-20 flex justify-center text-zinc-400">
-      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={20} />
-    </div>
-  );
-
-  if (reviews.length === 0) return null;
+  // If no reviews exist, return null to keep the UI clean
+  if (initialReviews.length === 0) return null;
 
   return (
     <section className="py-32 bg-[var(--bg-warm)] overflow-hidden border-t border-zinc-100">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        {/* 🎯 FIXED: Changed items-end to items-start or md:items-end and ensured left alignment */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
           <div className="space-y-4 text-left">
             <p className="text-[10px] uppercase tracking-[0.5em] text-[var(--accent-gold)] font-black italic">
@@ -129,17 +114,17 @@ export default function TestimonialSlider() {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="relative z-10 pl-12 border-l-2 border-[var(--accent-gold)]"
               >
-                {renderStars(reviews[currentIndex].rating)}
+                {renderStars(initialReviews[currentIndex].rating)}
                 
                 <p className="text-2xl md:text-4xl font-serif italic text-zinc-800 leading-[1.3] mb-12 tracking-tight">
-                  "{reviews[currentIndex].review_text}"
+                  "{initialReviews[currentIndex].review_text}"
                 </p>
                 
                 <div className="flex items-center gap-4">
                   <div className="h-[1px] w-8 bg-[var(--accent-gold)]" />
                   <div>
-                    <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-zinc-900">{reviews[currentIndex].name}</h4>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-400 font-bold mt-1">Verified: {reviews[currentIndex].page_slug}</p>
+                    <h4 className="text-[12px] uppercase tracking-[0.4em] font-black text-zinc-900">{initialReviews[currentIndex].name}</h4>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-400 font-bold mt-1">Verified: {initialReviews[currentIndex].page_slug}</p>
                   </div>
                 </div>
               </motion.div>
@@ -160,11 +145,11 @@ export default function TestimonialSlider() {
               <div className="flex-1 h-[1px] bg-zinc-100 relative">
                 <motion.div 
                    className="absolute top-0 left-0 h-full bg-[var(--accent-gold)]"
-                   animate={{ width: `${((currentIndex + 1) / reviews.length) * 100}%` }}
+                   animate={{ width: `${((currentIndex + 1) / initialReviews.length) * 100}%` }}
                    transition={{ duration: 0.8 }}
                 />
               </div>
-              <span className="text-[10px] font-black text-zinc-300 tracking-widest">0{reviews.length}</span>
+              <span className="text-[10px] font-black text-zinc-300 tracking-widest">0{initialReviews.length}</span>
             </div>
           </div>
         </div>

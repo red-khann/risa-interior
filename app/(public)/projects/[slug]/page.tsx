@@ -2,12 +2,17 @@ import { Metadata } from 'next';
 import { createClient } from '@/utils/supabase/server';
 import ProjectDetailClient from './ProjectDetailClient';
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const supabase = createClient();
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
   const { data: project } = await supabase
     .from('projects')
     .select('title, meta_description, focus_keyword, image_url, category, city')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single();
 
   if (!project) return { title: "Project Archive | RISA Interior & Contractors" };
@@ -16,31 +21,42 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title,
     description: project.meta_description || `Explore the architectural details of ${project.title}.`,
+    alternates: {
+      canonical: `https://www.risainterior.in/projects/${slug}`,
+    },
     openGraph: { title, images: [project.image_url], type: 'article' },
   };
 }
 
-export default async function Page({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+export default async function Page({ params }: Props) {
+  const { slug } = await params;
+  const supabase = await createClient();
   
-  // 🎯 DATA PROTOCOL: Fetch specific project rating for Search Console
+  // 🎯 Server-Side Fetch
+  const { data: projectData } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
   const { data: reviews } = await supabase
     .from('reviews')
-    .select('rating')
-    .eq('page_slug', params.slug)
-    .eq('status', 'approved');
+    .select('*')
+    .eq('page_slug', slug)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
 
   const total = reviews?.length || 0;
   const avg = total > 0 
     ? (reviews!.reduce((acc, r) => acc + r.rating, 0) / total).toFixed(1) 
     : "5.0";
 
-  // 🏛️ JSON-LD SCHEMA: The "Signal" for Google Stars
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
-    "name": params.slug,
+    "name": projectData?.title || slug,
     "author": { "@type": "Organization", "name": "RISA Interior" },
+    "image": projectData?.image_url,
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": avg,
@@ -55,7 +71,11 @@ export default async function Page({ params }: { params: { slug: string } }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProjectDetailClient slug={params.slug} />
+      <ProjectDetailClient 
+        slug={slug} 
+        initialProject={projectData} 
+        initialReviews={reviews || []} 
+      />
     </>
   );
 }

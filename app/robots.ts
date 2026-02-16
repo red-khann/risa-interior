@@ -7,6 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         // 🎯 Priority for Visual Branding (Favicon & OG Image)
+        // Ensures your Gold Monogram and Banner appear correctly in search results
         userAgent: ['Googlebot-Image', 'GoogleFavicon'],
         allow: ['/favicon.png', '/opengraph-image'],
       },
@@ -14,12 +15,11 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/admin',      
-          '/admin/logs',  
-          '/admin/settings',
-          '/api/',        
-          '/_next/',      
-          '/private/',    
+          '/admin',       // Studio Content Engine
+          '/login',       // 🛡️ Added: Protect login portal
+          '/api/',        // Server actions & Supabase calls
+          '/_next/',       // Next.js internal build files
+          '/private/',    // Internal assets
         ],
       },
     ],

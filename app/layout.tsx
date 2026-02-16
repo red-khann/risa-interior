@@ -2,10 +2,9 @@ import { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/global.css";
 import ClientLayoutWrapper from "./ClientLayoutWrapper";
+import { createClient } from "@/utils/supabase/server";
 
 const inter = Inter({ subsets: ["latin"] });
-
-// 🎯 Hardcoded production URL for metadata reliability
 const baseUrl = "https://www.risainterior.in";
 
 export const metadata: Metadata = {
@@ -15,8 +14,6 @@ export const metadata: Metadata = {
     template: "%s | RISA Interior & Contractors"
   },
   description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
-  
-  // 🎯 Social Media Protocol: Open Graph
   openGraph: {
     title: "RISA Interior & Contractors",
     description: "Bespoke Architecture & Interior Management. Specializing in luxury residential and commercial design narratives.",
@@ -24,7 +21,6 @@ export const metadata: Metadata = {
     siteName: "RISA Interior & Contractors",
     locale: "en_US",
     type: "website",
-    // 🎯 Use absolute URL to force the Gold Banner over the monogram
     images: [
       {
         url: `${baseUrl}/opengraph-image`, 
@@ -34,55 +30,51 @@ export const metadata: Metadata = {
       },
     ],
   },
-
-  // 🎯 Professional Branding for X (Twitter)
   twitter: {
     card: "summary_large_image",
     title: "RISA Interior & Contractors",
     description: "Bespoke Architecture & Interior Management.",
     images: [`${baseUrl}/opengraph-image`], 
   },
-
   verification: {
     google: "YOUR_UNIQUE_GOOGLE_VERIFICATION_CODE_HERE", 
   },
-
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
-
   icons: {
-    icon: [
-      { url: "/favicon.png", type: "image/png" },
-      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.png", sizes: "48x48", type: "image/png" },
-      { url: "/favicon.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.png", sizes: "144x144", type: "image/png" },
-    ],
-    shortcut: "/favicon.png",
-    apple: [
-      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
-    ],
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = createClient();
+  
+  // 🎯 SEO FETCH: Get all site content on the server to prevent layout shift
+  const { data } = await supabase
+    .from('site_content')
+    .select('page_key, section_key, content_value');
+
+  const initialMap: Record<string, any> = {};
+  if (data) {
+    data.forEach((item) => {
+      initialMap[`${item.page_key}:${item.section_key}`] = item.content_value;
+    });
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-[var(--bg-warm)] antialiased`}>
-        <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+        {/* Pass the server-fetched data to the client wrapper */}
+        <ClientLayoutWrapper initialData={initialMap}>
+          {children}
+        </ClientLayoutWrapper>
       </body>
     </html>
   );

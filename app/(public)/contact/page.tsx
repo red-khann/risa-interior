@@ -15,6 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Contact | RISA Interior & Contractors - Let's build your vision",
     description: data?.content_value || "Get in touch with RISA Interior & Contractors for luxury interior design, architectural planning, and professional contracting inquiries.",
+    alternates: {
+      canonical: 'https://www.risainterior.in/contact',
+    },
     openGraph: {
       title: "Contact RISA Interior",
       description: "Start your project journey with our architectural and design team.",
@@ -23,6 +26,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function ContactPage() {
-  return <ContactClient />;
+export default async function ContactPage() {
+  const supabase = createClient();
+
+  // 🎯 Server-Side Fetch: Populate service dropdown for SEO and performance
+  const { data: svcData } = await supabase
+    .from('services')
+    .select('name')
+    .eq('status', 'Active');
+
+  return <ContactClient initialServices={svcData || []} />;
 }

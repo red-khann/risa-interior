@@ -1,36 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { ArrowUpRight } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
 
-export const ProjectCard = ({ project }: { project: any }) => {
-  const supabase = createClient();
-  const [avgRating, setAvgRating] = useState<number>(0);
-
+export const ProjectCard = ({ project, avgRating = 0 }: { project: any, avgRating?: number }) => {
   const seoAltText = project.hero_alt_text || project.alt_text || `${project.title} - ${project.category} in ${project.city || project.location}`;
   const TAG_COLOR = "#606060"; 
 
-  useEffect(() => {
-    async function fetchProjectRating() {
-      const { data } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('page_slug', project.slug)
-        .eq('page_type', 'project')
-        .eq('status', 'approved');
-
-      if (data && data.length > 0) {
-        const avg = data.reduce((acc, r) => acc + r.rating, 0) / data.length;
-        setAvgRating(avg);
-      }
-    }
-    if (project?.slug) fetchProjectRating();
-  }, [project.slug, supabase]);
-
-  // 🎯 MICRO-PRECISION STAR LOGIC: Fills color based on exact decimal
+  // 🎯 MICRO-PRECISION STAR LOGIC: Restored with useMemo for performance
   const StarIcon = ({ fillPercentage }: { fillPercentage: number }) => {
-    // Unique ID for SVG gradient to avoid conflicts between cards
-    const gradientId = `grad-${Math.random().toString(36).substr(2, 9)}`;
+    const gradientId = useMemo(() => `grad-${Math.random().toString(36).substr(2, 9)}`, []);
     
     return (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -56,7 +34,6 @@ export const ProjectCard = ({ project }: { project: any }) => {
             let fill = 0;
             if (rating >= index) fill = 100;
             else if (rating > index - 1) fill = (rating - (index - 1)) * 100;
-
             return <StarIcon key={index} fillPercentage={fill} />;
           })}
         </div>
@@ -77,7 +54,6 @@ export const ProjectCard = ({ project }: { project: any }) => {
           loading="lazy" 
         />
         <div className="absolute inset-0 bg-black/5 pointer-events-none group-hover:bg-transparent transition-colors duration-700" />
-
         <div className="absolute inset-0 bg-[#0B0B0B]/40 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center backdrop-blur-[2px]">
           <div className="overflow-hidden">
             <p className="text-white text-[10px] uppercase tracking-[0.8em] font-black transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
@@ -90,7 +66,6 @@ export const ProjectCard = ({ project }: { project: any }) => {
       <div className="space-y-4">
         <div className="flex flex-col gap-2">
           {avgRating > 0 && renderStars(avgRating)}
-          
           <div className="flex items-center gap-3">
             <span className="text-[9px] uppercase tracking-[0.4em] font-black italic" style={{ color: TAG_COLOR }}>
               {project.category}

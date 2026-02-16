@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { useMemo } from 'react'
 import { useContent } from '@/components/PreviewProvider'
 import {
-  Loader2,
   Target,
   Eye,
   Gem,
@@ -13,14 +11,18 @@ import {
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
 
-export default function AboutClient() {
-  const [totalProjects, setTotalProjects] = useState(0)
-  const [avgRating, setAvgRating] = useState(0)
-  const [totalReviews, setTotalReviews] = useState(0)
-  const [loading, setLoading] = useState(true)
+interface AboutClientProps {
+  initialProjectsCount: number;
+  initialAvgRating: number;
+  initialReviewsCount: number;
+}
 
+export default function AboutClient({
+  initialProjectsCount,
+  initialAvgRating,
+  initialReviewsCount
+}: AboutClientProps) {
   const liveData = useContent()
-  const supabase = createClient()
 
   // 🎯 Calculate Years of Mastery Dynamically
   const FOUNDED_YEAR = 2012;
@@ -33,13 +35,10 @@ export default function AboutClient() {
   const getUI = (key: string, fallback: string) => liveData[`about:${key}`] || fallback
 
   const content = {
-    // Act I: Hero
     hero_label: getUI('hero_label', 'Philosophy'),
     hero_image: getUI('about_hero_image', ''),
     title: getUI('about_title', 'Architectural [integrity] meets interior poetry.'),
     description: getUI('about_description', 'We curate environments that reflect the silent dialogue between raw materiality and human inhabitancy.'),
-    
-    // Act II: Leadership
     founder_title: getUI('founder_title', 'Leadership Narrative'),
     founder_name: getUI('founder_name', 'Mohd Rizwan Khan'),
     founder_role: getUI('founder_role', 'Principal Lead'),
@@ -47,23 +46,16 @@ export default function AboutClient() {
     founder_image: getUI('founder_image', ''),
     leadership_main_title: getUI('leadership_main_title', 'Architectural'),
     leadership_serif_title: getUI('leadership_serif_title', 'Integrity'),
-    
-    // Act III: Stats & Labels
     projects_label: getUI('projects_label', 'Built Protocols'),
     feedback_label: getUI('feedback_label', 'Client Satisfaction'),
     years_label: getUI('years_label', 'Years of Mastery'),
-    // dynamic calculation instead of DB fetch
     years_value: calculatedYears.toString(), 
-
-    // Act IV: Strategic Intent (MVV)
     mission_title: getUI('mission_title', 'Our Mission'),
     mission_text: getUI('mission_text', 'To craft architectural environments that unite precision engineering with human-centered design.'),
     vision_title: getUI('vision_title', 'Our Vision'),
     vision_text: getUI('vision_text', 'To establish a benchmark of architectural excellence where every structure reflects spatial intelligence.'),
     values_title: getUI('values_title', 'Our Values'),
     values_text: getUI('values_text', 'Material honesty. Structural integrity. Client transparency. Timeless spatial composition.'),
-    
-    // Act V: Distinction
     wcu_title: getUI('wcu_title', "Why RISA Interior?"),
     wcu_subtitle: getUI('wcu_subtitle', "The Distinction"),
     wcu_points: [
@@ -73,15 +65,13 @@ export default function AboutClient() {
       getUI('wcu_point_4', "Lead-Principal Oversight on Every Site")
     ],
     wcu_quote: getUI('wcu_quote', "Integrity is the only material that never ages."),
-    
-    // Act VI: CTA
     cta_title: getUI('cta_title', "Start your [narrative]"),
     cta_button: getUI('cta_button', "Initiate Conversation")
   }
 
   const starIds = useMemo(() => Array.from({ length: 5 }, () => crypto.randomUUID()), [])
 
-const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
+  const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
     <svg width="20" height="20" viewBox="0 0 24 24" className="text-[var(--accent-light)]">
       <defs>
         <linearGradient id={id}>
@@ -104,27 +94,6 @@ const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
   }
 
   const cardStyle = "p-10 lg:p-14 bg-white/60 backdrop-blur-md border border-white shadow-sm relative transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:z-30 cursor-default"
-
-  useEffect(() => {
-    async function fetchStats() {
-      setLoading(true)
-      const { count } = await supabase.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'Active')
-      const { data } = await supabase.from('reviews').select('rating').eq('status', 'approved')
-      if (count) setTotalProjects(count)
-      if (data?.length) {
-        setAvgRating(data.reduce((a, b) => a + b.rating, 0) / data.length)
-        setTotalReviews(data.length)
-      }
-      setLoading(false)
-    }
-    fetchStats()
-  }, [supabase])
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-warm)]">
-      <Loader2 className="animate-spin text-[var(--accent-gold)]" size={32} />
-    </div>
-  )
 
   return (
     <main className="bg-[var(--bg-warm)] min-h-screen overflow-x-hidden">
@@ -194,7 +163,7 @@ const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
           {/* Projects Card */}
           <div className={cardStyle + " text-center bg-white/60"}>
             <p className="text-8xl font-bold text-zinc-900 tracking-tighter tabular-nums">
-              {totalProjects}<span className="text-[var(--accent-light)]">+</span>
+              {initialProjectsCount}<span className="text-[var(--accent-light)]">+</span>
             </p>
             <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-black mt-4">{content.projects_label}</p>
           </div>
@@ -203,12 +172,12 @@ const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
           <div className={cardStyle + " text-center bg-white/80"}>
             <div className="flex justify-center gap-1 text-[var(--accent-light)] mb-4">
               {starIds.map((id, i) => {
-                const fill = avgRating >= i + 1 ? 100 : avgRating > i ? (avgRating - i) * 100 : 0
+                const fill = initialAvgRating >= i + 1 ? 100 : initialAvgRating > i ? (initialAvgRating - i) * 100 : 0
                 return <DynamicStar key={id} fill={fill} id={id} />
               })}
             </div>
-            <p className="text-5xl lg:text-6xl font-bold tracking-tighter text-zinc-900 tabular-nums">{avgRating.toFixed(1)}</p>
-            <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-black mt-2">{content.feedback_label} ({totalReviews})</p>
+            <p className="text-5xl lg:text-6xl font-bold tracking-tighter text-zinc-900 tabular-nums">{initialAvgRating.toFixed(1)}</p>
+            <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-black mt-2">{content.feedback_label} ({initialReviewsCount})</p>
           </div>
 
           {/* Years Card */}
@@ -278,7 +247,6 @@ const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
         </div>
       </section>
 
-      
       {/* CTA */}
       <section className="py-56 text-center border-t border-zinc-200/60 bg-white">
         <h2 className="text-6xl md:text-[4.5vw] xl:text-7xl font-bold tracking-tighter leading-[0.9] uppercase text-zinc-900 max-w-4xl mx-auto">
@@ -286,7 +254,7 @@ const DynamicStar = ({ fill, id }: { fill: number; id: string }) => (
         </h2>
         <Link
           href="/contact"
-          className="inline-block mt-16 px-16 py-10 bg-zinc-900 text-white uppercase tracking-[0.6em] text-[11px] font-black hover:bg-[var(--accent-gold)] transition-all shadow-2xl active:scale-95"
+          className="inline-block mt-16 px-14 py-10 bg-zinc-900 text-white uppercase tracking-[0.6em] text-[11px] font-black hover:bg-[var(--accent-gold)] transition-all shadow-2xl active:scale-95"
         > 
           {content.cta_button}
         </Link>

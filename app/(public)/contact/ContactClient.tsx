@@ -1,17 +1,21 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useContent } from '@/components/PreviewProvider'; 
 import { motion } from 'framer-motion';
 
-export default function ContactClient() {
+interface ContactClientProps {
+  initialServices: any[];
+}
+
+export default function ContactClient({ initialServices }: ContactClientProps) {
   const supabase = createClient();
   const formRef = useRef<HTMLFormElement>(null);
   
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [services, setServices] = useState<any[]>([]);
-  const [selectedService, setSelectedService] = useState(""); 
+  // 🎯 Hydrate state from server props
+  const [selectedService, setSelectedService] = useState(initialServices[0]?.name || ""); 
   
   const liveContent = useContent();
 
@@ -27,21 +31,6 @@ export default function ContactClient() {
     addrLabel: getUI('address_label', "Studio Address"),
     address: getUI('contact_address', "123 Design District, Suite 400\nNew York, NY 10001")
   };
-
-  useEffect(() => {
-    async function fetchServices() {
-      const { data: svcData } = await supabase
-        .from('services')
-        .select('name')
-        .eq('status', 'Active');
-      
-      if (svcData) {
-        setServices(svcData);
-        if (svcData.length > 0) setSelectedService(svcData[0].name);
-      }
-    }
-    fetchServices();
-  }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -73,7 +62,6 @@ export default function ContactClient() {
         body: JSON.stringify({
           name: clientName,
           email: contactInfo,
-          phone: "See contact info",
           service: finalService,
           message: description
         }),
@@ -81,7 +69,7 @@ export default function ContactClient() {
 
       setSubmitted(true);
       formRef.current?.reset();
-      if (services.length > 0) setSelectedService(services[0].name); 
+      if (initialServices.length > 0) setSelectedService(initialServices[0].name); 
       setTimeout(() => setSubmitted(false), 5000);
 
     } catch (err: any) {
@@ -107,7 +95,6 @@ export default function ContactClient() {
                 {content.subtitle}
               </h2>
 
-              {/* 🎯 ADJUSTED TITLE SIZE: text-[10vw] for mobile, text-[5vw] for desktop */}
               <h1 className="text-[10vw] sm:text-[8vw] lg:text-[5vw] leading-[0.95] text-zinc-900 font-bold tracking-tighter uppercase break-words mb-12">
                 {content.title.split(/(\[.*?\])/g).map((part, i) => part.startsWith('[') ? 
                   <span key={i} className="font-serif italic text-zinc-300">{part.slice(1, -1)}</span> : part
@@ -165,7 +152,7 @@ export default function ContactClient() {
                     onChange={(e) => setSelectedService(e.target.value)}
                     className="w-full bg-transparent border-b border-zinc-200 py-3 focus:border-zinc-900 outline-none transition-all font-light appearance-none cursor-pointer"
                   >
-                    {services.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
+                    {initialServices.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
                     <option value="Other">Other / Custom Inquiry</option>
                   </select>
                 </div>
