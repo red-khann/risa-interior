@@ -36,15 +36,16 @@ export const metadata: Metadata = {
     description: "Bespoke Architecture & Interior Management.",
     images: [`${baseUrl}/opengraph-image`], 
   },
-  verification: {
-    google: "YOUR_UNIQUE_GOOGLE_VERIFICATION_CODE_HERE", 
-  },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: "/favicon.png",
+    icon: [
+    { url: '/favicon.svg', type: 'image/svg+xml' }, 
+    { url: '/favicon.png', type: 'image/png' },
+  ],
+  shortcut: '/favicon.png',
     apple: "/favicon.png",
   },
 };
